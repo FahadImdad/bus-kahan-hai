@@ -4,20 +4,20 @@ export const runtime = "edge";
 
 const BASE_URL = "https://mobile.peoplebusservice.com/rl1/";
 
-function passengerParams() {
+function passengerParams(lat = "24.860966", lng = "66.990501") {
   return new URLSearchParams({
     region: "123",
     version: "Android_1.4.4(34)_15_web_com.kentkart.smtaapp",
     authType: "4",
     accuracy: "0",
-    lat: "24.860966",
-    lng: "66.990501",
+    lat,
+    lng,
     lang: "en",
   });
 }
 
-async function passengerFetch(path: string, extra?: Record<string, string>) {
-  const params = passengerParams();
+async function passengerFetch(path: string, extra?: Record<string, string>, location?: { lat: string; lng: string }) {
+  const params = passengerParams(location?.lat, location?.lng);
   Object.entries(extra ?? {}).forEach(([key, value]) => params.set(key, value));
   const response = await fetch(`${BASE_URL}${path}?${params.toString()}`, {
     headers: { Accept: "application/json" },
@@ -29,7 +29,12 @@ async function passengerFetch(path: string, extra?: Record<string, string>) {
 
 export async function GET(request: NextRequest) {
   try {
-    const directory = await passengerFetch("api/v2.0/route/list");
+    const requestedLat = Number(request.nextUrl.searchParams.get("lat"));
+    const requestedLng = Number(request.nextUrl.searchParams.get("lng"));
+    const location = Number.isFinite(requestedLat) && Number.isFinite(requestedLng)
+      ? { lat: String(requestedLat), lng: String(requestedLng) }
+      : undefined;
+    const directory = await passengerFetch("api/v2.0/route/list", undefined, location);
     const uniqueStops = Array.from(
       new Map(
         (directory.stopList ?? []).map((stop: Record<string, unknown>) => [
@@ -40,7 +45,7 @@ export async function GET(request: NextRequest) {
     );
     const stopId = request.nextUrl.searchParams.get("stopId") ?? String((uniqueStops[0] as Record<string, unknown> | undefined)?.stopId ?? "");
     const live = stopId
-      ? await passengerFetch("api/bus/closest", { busStopId: stopId })
+      ? await passengerFetch("api/bus/closest", { busStopId: stopId }, location)
       : { busList: [], routeList: [], stopInfo: null };
 
     return NextResponse.json(
