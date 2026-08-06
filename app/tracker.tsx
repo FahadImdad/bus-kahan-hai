@@ -63,11 +63,11 @@ function mergeRememberedBuses(previous: Bus[], incoming: Bus[]) {
 
 function lastSeenLabel(bus: Bus, language: Language) {
   const seconds = Math.max(0, bus.locationAgeSeconds ?? Math.round((Date.now() - Date.parse(bus.lastSeenAt || "")) / 1000));
-  if (seconds < 60) return language === "ur" ? "ابھی آف لائن ہوئی" : "Inactive just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return language === "ur" ? `${minutes} منٹ پہلے آخری مقام` : `Last location ${minutes} min ago`;
-  const hours = Math.floor(minutes / 60);
-  return language === "ur" ? `${hours} گھنٹے پہلے آخری مقام` : `Last location ${hours} hr ago`;
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  const elapsed = `${hours ? `${hours}h ` : ""}${minutes ? `${minutes}m ` : ""}${remainingSeconds}s`;
+  return language === "ur" ? `آخری مقام ${elapsed} پہلے` : `Last seen ${elapsed} ago`;
 }
 function canonicalRouteCode(value = "") {
   const normalized = value.toUpperCase();
@@ -218,6 +218,18 @@ export function BusTracker() {
   }, []);
 
   useEffect(() => {
+    const node = mapNode.current;
+    if (!node || typeof ResizeObserver === "undefined") return;
+    let frame = 0;
+    const observer = new ResizeObserver(() => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => map.current?.invalidateSize({ pan: false }));
+    });
+    observer.observe(node);
+    return () => { window.cancelAnimationFrame(frame); observer.disconnect(); };
+  }, []);
+
+  useEffect(() => {
     const currentMap = map.current; if (!currentMap || !mapReady) return;
     const selectPoint = async (event: { latlng: { lat: number; lng: number } }) => {
       if (!pinModeRef.current) return;
@@ -294,9 +306,8 @@ export function BusTracker() {
       const label = bus.displayRouteCode || "BUS";
       const color = routeLineColor(label);
       const isRecentlySeen = bus.trackingStatus === "recently_seen";
-      const ageMinutes = Math.max(1, Math.round((bus.locationAgeSeconds ?? 0) / 60));
       const statusLabel = isRecentlySeen
-        ? (language === "ur" ? `${ageMinutes} منٹ پہلے دیکھا گیا` : `Last seen ${ageMinutes} min ago`)
+        ? lastSeenLabel(bus, language)
         : (language === "ur" ? "ابھی لائیو" : "Live now");
       const vehicleLabel = bus.plate ?? (language === "ur" ? "بس گاڑی" : "Bus vehicle");
       const marker = L.marker([lat, lng], { icon: L.divIcon({ className: "bus-marker-wrap", html: `<button class="bus-marker${isRecentlySeen ? " recently-seen" : ""}" style="background:${color}" aria-label="${statusLabel} bus ${label}">${label}</button>`, iconSize: [48, 30], iconAnchor: [24, 15] }) }).addTo(currentMap);
