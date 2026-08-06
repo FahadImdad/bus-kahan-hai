@@ -17,6 +17,7 @@ type TransitData = { ok: boolean; checkedAt: string; selectedStopId: string; sto
 
 const KARACHI: [number, number] = [67.0099, 24.8615];
 const VEHICLE_MEMORY_STORAGE_KEY = "bus-kahan-hai-vehicle-memory";
+const MAX_REMEMBERED_VEHICLES = 500;
 type Language = "en" | "ur";
 const translations = {
   en: { subtitle: "Karachi People’s Bus tracker", live: "Live buses", online: "Feed online", refreshing: "Refreshing live feed", across: "live buses across Karachi", refreshHint: "Refreshes every 30 seconds", eyebrow: "Karachi live bus map", title1: "How far is", title2: "your bus?", intro: "Enable location. We will show nearby active buses and your nearest stop.", locating: "Finding your location…", enabled: "Current location enabled", useLocation: "Use my current location", permission: "Allow location permission and try again", nearestSelected: "Nearest stop selected automatically", nearestHint: "Find nearby buses and stops instantly", nearby: "Near you", activeNow: "Live now", road: "buses are on the road", showAll: "Show all", liveLocation: "Live location", away: "away", route: "Bus or route", allRoutes: "All routes", from: "From", to: "To", stopsCount: "stops on this route", nearestStop: "Nearest bus stop", selectedStop: "Selected stop", refresh: "Refresh", checking: "Checking…", arrivals: "When will it arrive?", etaPending: "Live ETA is not available yet", etaHint: "Bus location and minutes will appear when the service feed updates.", disclaimer: "Independent public service. Live information depends on the operator feed." },
@@ -26,11 +27,22 @@ const translations = {
 function numeric(value: unknown) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : null; }
 function clientVehicleKey(bus: Bus) { return bus.vehicleKey || bus.plate || `${bus.displayRouteCode || bus.routeCode}-${bus.lat ?? bus.latitude}-${bus.lng ?? bus.longitude}`; }
 function storedVehicleMemory() {
-  try { return JSON.parse(window.localStorage.getItem(VEHICLE_MEMORY_STORAGE_KEY) || "[]") as Bus[]; }
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(VEHICLE_MEMORY_STORAGE_KEY) || "[]") as Bus[];
+    const now = Date.now();
+    return saved.map((bus) => {
+      const seenAt = Date.parse(bus.lastSeenAt || "");
+      const lastSeen = Number.isFinite(seenAt) ? seenAt : now;
+      return { ...bus, trackingStatus: "recently_seen" as const, lastSeenAt: new Date(lastSeen).toISOString(), locationAgeSeconds: Math.max(0, Math.round((now - lastSeen) / 1000)) };
+    });
+  }
   catch { return []; }
 }
 function saveVehicleMemory(buses: Bus[]) {
-  try { window.localStorage.setItem(VEHICLE_MEMORY_STORAGE_KEY, JSON.stringify(buses)); }
+  try {
+    const safestRecentFleet = [...buses].sort((a, b) => Date.parse(b.lastSeenAt || "") - Date.parse(a.lastSeenAt || "")).slice(0, MAX_REMEMBERED_VEHICLES);
+    window.localStorage.setItem(VEHICLE_MEMORY_STORAGE_KEY, JSON.stringify(safestRecentFleet));
+  }
   catch { /* Tracking continues even when browser storage is unavailable. */ }
 }
 function mergeRememberedBuses(previous: Bus[], incoming: Bus[]) {
@@ -41,7 +53,21 @@ function mergeRememberedBuses(previous: Bus[], incoming: Bus[]) {
     const lastSeen = Number.isFinite(seenAt) ? seenAt : now;
     return { ...bus, trackingStatus: "recently_seen" as const, lastSeenAt: new Date(lastSeen).toISOString(), locationAgeSeconds: Math.round((now - lastSeen) / 1000) };
   });
-  return [...incoming, ...remembered];
+  const current = incoming.map((bus) => {
+    const seenAt = Date.parse(bus.lastSeenAt || "");
+    const lastSeen = Number.isFinite(seenAt) ? seenAt : now;
+    return { ...bus, lastSeenAt: new Date(lastSeen).toISOString(), locationAgeSeconds: Math.max(0, Math.round((now - lastSeen) / 1000)) };
+  });
+  return [...current, ...remembered];
+}
+
+function lastSeenLabel(bus: Bus, language: Language) {
+  const seconds = Math.max(0, bus.locationAgeSeconds ?? Math.round((Date.now() - Date.parse(bus.lastSeenAt || "")) / 1000));
+  if (seconds < 60) return language === "ur" ? "ابھی آف لائن ہوئی" : "Inactive just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return language === "ur" ? `${minutes} منٹ پہلے آخری مقام` : `Last location ${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  return language === "ur" ? `${hours} گھنٹے پہلے آخری مقام` : `Last location ${hours} hr ago`;
 }
 function canonicalRouteCode(value = "") {
   const normalized = value.toUpperCase();
@@ -162,7 +188,10 @@ export function BusTracker() {
         setData((previous) => { const mergedBuses = mergeRememberedBuses(previous?.buses?.length ? previous.buses : storedVehicleMemory(), next.buses); saveVehicleMemory(mergedBuses); return { ...next, buses: mergedBuses }; }); setSelectedStop(stopId || (routeCode ? "" : next.selectedStopId)); setError("");
       }
     } catch (failure) {
-      if (!(failure instanceof DOMException && failure.name === "AbortError") && sequence === requestSequence.current) setError("Live service se connection nahi ho saka. Dobara try karein.");
+      if (!(failure instanceof DOMException && failure.name === "AbortError") && sequence === requestSequence.current) {
+        setData((previous) => previous ?? { ok: false, checkedAt: new Date().toISOString(), selectedStopId: "", stops: [], routes: [], buses: storedVehicleMemory(), arrivals: [] });
+        setError("Live service se connection nahi ho saka. Saved last locations dikhayi ja rahi hain.");
+      }
     } finally {
       if (activeRequest.current === controller) activeRequest.current = null;
       if (!silent && sequence === requestSequence.current) setLoading(false);
@@ -362,6 +391,9 @@ export function BusTracker() {
     nearbyBuses.forEach((item) => { const route = item.bus.displayRouteCode || item.bus.routeCode || "BUS"; groups.set(route, [...(groups.get(route) ?? []), item]); });
     return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true })).map(([route, buses]) => ({ route, buses }));
   }, [nearbyBuses]);
+  const inactiveBuses = useMemo(() => (data?.buses ?? [])
+    .filter((bus) => bus.trackingStatus === "recently_seen" && isKarachiBus(bus) && (!selectedRoute || canonicalRouteCode(bus.displayRouteCode || bus.routeCode) === canonicalRouteCode(selectedRoute)))
+    .sort((a, b) => Date.parse(b.lastSeenAt || "") - Date.parse(a.lastSeenAt || "")), [data?.buses, selectedRoute]);
   const routeSummary = useMemo(() => {
     if (!selectedRoute) return null;
     const path = (data?.routePaths ?? []).find((item) => item.displayRouteCode === selectedRoute && (item.busStopList?.length ?? 0) > 1) ?? data?.routePaths?.[0];
@@ -381,7 +413,8 @@ export function BusTracker() {
       <div className="map-panel"><div ref={mapNode} className="map" aria-label={language === "ur" ? "کراچی بس کا نقشہ" : "Karachi bus map"} /><div className="map-status"><span className="pulse" /><div><b>{loading ? t.refreshing : `${visibleBusCount} ${t.across}${recentlySeenBusCount ? `, ${recentlySeenBusCount} recently seen` : ""}`}</b><small>{language === "ur" ? `ہر ${selectedRoute ? 10 : 15} سیکنڈ بعد تازہ معلومات` : `Refreshes every ${selectedRoute ? 10 : 15} seconds`}</small></div></div></div>
       <aside className="control-panel"><div className="sheet-handle" aria-hidden="true" /><div className="eyebrow-row"><div className="eyebrow">{t.eyebrow}</div>{data?.coverage && <div className="coverage-mini" role="status"><b>{data.coverage.freshRouteDirections + data.coverage.retainedRouteDirections}/{data.coverage.requestedRouteDirections}</b><span>{language === "ur" ? "فیڈ چیک" : "feeds checked"}</span><button onClick={() => void load(selectedStop, targetLocation, selectedRoute)} disabled={loading}>{loading ? (language === "ur" ? "چیک…" : "Checking…") : (language === "ur" ? "دوبارہ چیک" : "Recheck")}</button></div>}</div><h1>{t.title1}<br /><em>{t.title2}</em></h1><p className="intro">{t.intro}</p>
         <div className="nearby-heading live-heading"><div><span>{targetLocation ? t.nearby : t.activeNow}</span><b>{visibleBusCount} {t.road}</b></div>{selectedRoute && <button onClick={() => { setSelectedRoute(""); load(selectedStop, targetLocation); }}>{t.showAll}</button>}</div>
-        <div className="live-route-groups" aria-label="Active buses grouped by route">{liveRouteGroups.map(({ route, buses }) => <section className="live-route-group" key={route}><button className="live-route-title" onClick={() => { setSelectedRoute(route); setUserLocation(null); setManualLocation(null); setStopLocation(null); setSelectedStop(""); setPinMode(false); setLocationState("idle"); void load("", null, route); }}><span style={{ backgroundColor: routeLineColor(route) }}>{route}</span><b>{buses.length} {language === "ur" ? "لائیو بسیں" : buses.length === 1 ? "live bus" : "live buses"}</b></button><div className="bus-strip">{buses.map(({ bus, distance, movement, etaMinutes }, index) => <button className={selectedRoute === route ? "active" : ""} key={`${route}-${bus.plate}-${index}`} onClick={() => { setSelectedRoute(route); void load(selectedStop, targetLocation, route); }}><span style={{ backgroundColor: routeLineColor(route) }}>{route}</span><div><b>{bus.plate || "Live bus"}</b><small>{distance === null ? t.liveLocation : `${distance < 1 ? `${Math.round(distance * 1000)} m` : `${distance.toFixed(1)} km`} · ${movement === "approaching" ? (language === "ur" ? "آپ کی طرف" : "Approaching") : movement === "away" ? (language === "ur" ? "دور جا رہی ہے" : "Moving away") : (language === "ur" ? "حرکت چیک ہو رہی ہے" : "Checking movement")}${etaMinutes ? ` · ~${etaMinutes} min` : ""}`}</small></div></button>)}</div></section>)}</div>
+        <div className="live-route-groups" aria-label="Active buses grouped by route">{liveRouteGroups.map(({ route, buses }) => <section className="live-route-group" key={route}><button className="live-route-title" onClick={() => { setSelectedRoute(route); setUserLocation(null); setManualLocation(null); setStopLocation(null); setSelectedStop(""); setPinMode(false); setLocationState("idle"); void load("", null, route); }}><span style={{ backgroundColor: routeLineColor(route) }}>{route}</span><b>{buses.length} {language === "ur" ? "لائیو بسیں" : buses.length === 1 ? "live moving bus" : "live moving buses"}</b></button><div className="bus-strip">{buses.map(({ bus, distance, movement, etaMinutes }, index) => <button className={selectedRoute === route ? "active" : ""} key={`${route}-${bus.plate}-${index}`} onClick={() => { setSelectedRoute(route); void load(selectedStop, targetLocation, route); }}><span style={{ backgroundColor: routeLineColor(route) }}>{route}</span><div><b>{bus.plate || "Live bus"}</b><small>{distance === null ? (language === "ur" ? "لائیو حرکت" : "Live moving") : `${distance < 1 ? `${Math.round(distance * 1000)} m` : `${distance.toFixed(1)} km`} · ${movement === "approaching" ? (language === "ur" ? "آپ کی طرف" : "Approaching") : movement === "away" ? (language === "ur" ? "دور جا رہی ہے" : "Moving away") : (language === "ur" ? "حرکت چیک ہو رہی ہے" : "Checking movement")}${etaMinutes ? ` · ~${etaMinutes} min` : ""}`}</small></div></button>)}</div></section>)}</div>
+        {inactiveBuses.length > 0 && <section className="inactive-fleet" aria-label={language === "ur" ? "غیر فعال بسوں کے آخری مقامات" : "Saved last locations of inactive buses"}><div className="inactive-heading"><span>{language === "ur" ? "غیر فعال — آخری مقام محفوظ" : "Inactive — last location saved"}</span><b>{inactiveBuses.length}</b></div><div className="inactive-list">{inactiveBuses.slice(0, 12).map((bus) => { const route = bus.displayRouteCode || bus.routeCode || "BUS"; return <article key={clientVehicleKey(bus)}><span style={{ backgroundColor: routeLineColor(route) }}>{route}</span><div><b>{bus.plate || (language === "ur" ? "بس گاڑی" : "Bus vehicle")}</b><small>{lastSeenLabel(bus, language)} · {language === "ur" ? "فعال ہوتے ہی لائیو ہو جائے گی" : "Returns to live when active"}</small></div></article>; })}</div></section>}
         <label className="select-label" htmlFor="route">{t.route}</label><div className="select-wrap route-select"><select id="route" value={selectedRoute} onChange={(event) => { const route = event.target.value; setSelectedRoute(route); setUserLocation(null); setManualLocation(null); setStopLocation(null); setSelectedStop(""); setPinMode(false); setLocationState("idle"); setLocationError(""); void load("", null, route); }}><option value="">{t.allRoutes}</option>{karachiRoutes.map((route) => <option key={route.routeCode} value={route.displayRouteCode || route.routeCode}>{route.displayRouteCode || route.routeCode} · {route.name}</option>)}</select></div>
         {routeSummary && <div className="route-summary"><span className="route-summary-code" style={{ backgroundColor: routeLineColor(selectedRoute) }}>{selectedRoute}</span><div className="route-journey"><div><i style={{ borderColor: routeLineColor(selectedRoute), color: routeLineColor(selectedRoute) }}>A</i><span><small>{t.from}</small><b>{routeSummary.from}</b></span></div><div className="route-connector" style={{ backgroundColor: routeLineColor(selectedRoute) }} /><div><i style={{ borderColor: routeLineColor(selectedRoute), color: routeLineColor(selectedRoute) }}>B</i><span><small>{t.to}</small><b>{routeSummary.to}</b></span></div></div><small className="route-stop-count">{routeSummary.stops} {t.stopsCount}</small></div>}
         {!selectedRoute && <div className="route-required" role="status">{language === "ur" ? "جاری رکھنے کے لیے پہلے ایک بس روٹ منتخب کریں" : "Select one bus route to continue."}</div>}

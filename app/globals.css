@@ -138,7 +138,18 @@ select:disabled { opacity: .5; cursor: not-allowed; background: #eceee9; }
 .user-marker.manual { width: 22px; height: 22px; border-radius: 50% 50% 50% 0; background: #1d5f8f; transform: rotate(-45deg); box-shadow: 0 0 0 6px rgba(29,95,143,.18), 0 4px 14px rgba(20,60,100,.3); }
 .route-end { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: white; border: 4px solid var(--green); color: var(--green); font-size: 9px; font-weight: 900; box-shadow: 0 4px 13px rgba(11,74,48,.25); }
 .bus-marker { min-width: 42px; height: 28px; border: 0; border-radius: 8px 8px 8px 2px; padding: 0 7px; background: var(--green); color: white; font-size: 9px; font-weight: 900; box-shadow: 0 6px 14px rgba(11,74,48,.28); cursor: pointer; }
+.bus-marker:not(.recently-seen) { position: relative; animation: live-bus-pulse 1.8s ease-in-out infinite; }
 .bus-marker.recently-seen { opacity: .52; border: 2px dashed rgba(255,255,255,.95); filter: grayscale(.35); }
+.inactive-fleet { margin: 4px 0 20px; padding: 12px; border: 1px dashed #a8bbcc; border-radius: 15px; background: rgba(232,240,247,.72); }
+.inactive-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 9px; color: #526b82; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: .65px; }
+.inactive-heading b { min-width: 24px; height: 24px; display: grid; place-items: center; border-radius: 999px; background: var(--navy); color: white; font-size: 9px; }
+.inactive-list { display: grid; gap: 7px; }
+.inactive-list article { min-height: 50px; display: flex; align-items: center; gap: 9px; padding: 8px; border-radius: 11px; background: rgba(255,255,255,.78); color: var(--ink); }
+.inactive-list article > span { min-width: 40px; height: 28px; display: grid; place-items: center; border-radius: 8px; color: white; font-size: 9px; font-weight: 900; opacity: .65; filter: grayscale(.25); }
+.inactive-list b, .inactive-list small { display: block; }
+.inactive-list b { font-size: 10px; }
+.inactive-list small { margin-top: 2px; color: #657b8e; font-size: 8px; line-height: 1.35; }
+@keyframes live-bus-pulse { 0%, 100% { transform: translateY(0); box-shadow: 0 6px 14px rgba(3,31,61,.28); } 50% { transform: translateY(-2px); box-shadow: 0 9px 18px rgba(255,23,31,.28); } }
 .route-direction { width: 30px; height: 24px; display: grid; place-items: center; border: 2px solid white; border-radius: 999px; color: white; font-size: 17px; font-weight: 900; line-height: 1; box-shadow: 0 4px 12px rgba(11,35,28,.28); }
 .feed-coverage { display: flex; align-items: center; gap: 9px; margin: 14px 0 6px; padding: 9px 12px; border: 1px solid rgba(10,132,88,.22); border-radius: 12px; background: rgba(10,132,88,.07); color: #315a4b; font-size: 12px; }
 .feed-coverage b { color: #087f54; font-size: 14px; }
