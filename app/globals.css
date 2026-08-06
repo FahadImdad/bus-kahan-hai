@@ -37,6 +37,8 @@ button, a, select { -webkit-tap-highlight-color: transparent; }
 .coverage-mini { flex: 0 0 auto; display: flex; align-items: baseline; gap: 5px; padding: 5px 8px; border: 1px solid rgba(10,132,88,.2); border-radius: 999px; background: rgba(10,132,88,.07); color: #537064; white-space: nowrap; }
 .coverage-mini b { color: var(--green); font-size: 10px; }
 .coverage-mini span { font-size: 7px; font-weight: 700; text-transform: uppercase; letter-spacing: .45px; }
+.coverage-mini button { min-height: 24px; margin-left: 2px; padding: 0 7px; border: 0; border-radius: 999px; background: var(--green); color: white; font-size: 7px; font-weight: 800; cursor: pointer; }
+.coverage-mini button:disabled { opacity: .58; cursor: wait; }
 h1 { margin: 0; font-size: clamp(38px, 4.2vw, 67px); letter-spacing: -3.8px; line-height: .98; font-weight: 800; }
 h1 em { color: var(--green); font-style: normal; }
 .intro { max-width: 440px; color: #657269; font-size: 13px; line-height: 1.7; margin: 20px 0 26px; }

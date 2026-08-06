@@ -134,7 +134,7 @@ export function BusTracker() {
   const motionHistory = useRef(new Map<string, MotionSample[]>()); const pinModeRef = useRef(false);
   const [data, setData] = useState<TransitData | null>(null); const [selectedStop, setSelectedStop] = useState(""); const [selectedRoute, setSelectedRoute] = useState("");
   const [userLocation, setUserLocation] = useState<Location | null>(null); const [locationState, setLocationState] = useState<"idle" | "loading" | "ready" | "error">("idle");
-  const [manualLocation, setManualLocation] = useState<Location | null>(null); const [pinMode, setPinMode] = useState(false); const [mapRevision, setMapRevision] = useState(0);
+  const [manualLocation, setManualLocation] = useState<Location | null>(null); const [stopLocation, setStopLocation] = useState<Location | null>(null); const [pinMode, setPinMode] = useState(false); const [mapRevision, setMapRevision] = useState(0);
   const [locationError, setLocationError] = useState("");
   const [mapReady, setMapReady] = useState(false);
   const [language, setLanguage] = useState<Language>("en");
@@ -157,7 +157,7 @@ export function BusTracker() {
       if (sequence === requestSequence.current) {
         const sampledAt = Date.parse(next.checkedAt) || Date.now();
         next.buses.forEach((bus) => { const location = busLocation(bus); if (!location) return; const key = clientVehicleKey(bus); const samples = motionHistory.current.get(key) ?? []; const last = samples.at(-1); if (!last || distanceKm(location, { stopId: key, ...last }) > .005) motionHistory.current.set(key, [...samples.slice(-2), { ...location, at: sampledAt }]); });
-        setData((previous) => { const mergedBuses = mergeRememberedBuses(previous?.buses?.length ? previous.buses : storedVehicleMemory(), next.buses); saveVehicleMemory(mergedBuses); return { ...next, buses: mergedBuses }; }); setSelectedStop(stopId || next.selectedStopId); setError("");
+        setData((previous) => { const mergedBuses = mergeRememberedBuses(previous?.buses?.length ? previous.buses : storedVehicleMemory(), next.buses); saveVehicleMemory(mergedBuses); return { ...next, buses: mergedBuses }; }); setSelectedStop(stopId || (routeCode ? "" : next.selectedStopId)); setError("");
       }
     } catch (failure) {
       if (!(failure instanceof DOMException && failure.name === "AbortError") && sequence === requestSequence.current) setError("Live service se connection nahi ho saka. Dobara try karein.");
@@ -171,7 +171,7 @@ export function BusTracker() {
   useEffect(() => { const saved = window.localStorage.getItem("bus-language"); if (saved === "ur") setLanguage("ur"); }, []);
   useEffect(() => { document.documentElement.lang = language; document.documentElement.dir = language === "ur" ? "rtl" : "ltr"; window.localStorage.setItem("bus-language", language); }, [language]);
   useEffect(() => { const node = mapNode.current; if (!node) return; node.classList.toggle("language-en", language === "en"); node.classList.toggle("pin-mode", pinMode); }, [language, pinMode]);
-  const targetLocation = manualLocation ?? userLocation;
+  const targetLocation = manualLocation ?? userLocation ?? stopLocation;
   useEffect(() => { pinModeRef.current = pinMode; }, [pinMode]);
   useEffect(() => { const timer = window.setInterval(() => load(selectedStop, targetLocation, selectedRoute, true), selectedRoute ? 10_000 : 15_000); return () => window.clearInterval(timer); }, [load, selectedRoute, selectedStop, targetLocation]);
   useEffect(() => {
@@ -193,7 +193,7 @@ export function BusTracker() {
       const location = { lat: event.latlng.lat, lng: event.latlng.lng };
       const selectedPaths = [...(data?.referenceRoutePaths ?? []), ...(data?.routePaths ?? [])].filter((path) => canonicalRouteCode(path.displayRouteCode) === canonicalRouteCode(selectedRoute));
       if (!selectedPaths.length || distanceToRouteKm(location, selectedPaths) > .5) { setLocationError(language === "ur" ? "منتخب مقام روٹ سے بہت دور ہے۔ روٹ کے قریب پن لگائیں۔" : "That point is too far from the selected route. Place the pin within 500 m of the route."); setLocationState("error"); return; }
-      setLocationError(""); setManualLocation(location); setPinMode(false); setLocationState("idle");
+      setLocationError(""); setStopLocation(null); setManualLocation(location); setPinMode(false); setLocationState("idle");
       const routeStops = stopsForRoute(data, selectedRoute);
       const nearest = routeStops.length ? [...routeStops].sort((a, b) => distanceKm(location, a) - distanceKm(location, b))[0] : null;
       await load(nearest ? String(nearest.stopId) : selectedStop, location, selectedRoute);
@@ -227,7 +227,7 @@ export function BusTracker() {
       const location = { lat: coords.latitude, lng: coords.longitude };
       const selectedPaths = [...(data?.referenceRoutePaths ?? []), ...(data?.routePaths ?? [])].filter((path) => canonicalRouteCode(path.displayRouteCode) === canonicalRouteCode(selectedRoute));
       if (!selectedPaths.length || distanceToRouteKm(location, selectedPaths) > .5) { setLocationState("error"); setLocationError(language === "ur" ? "آپ کی لوکیشن منتخب روٹ سے بہت دور ہے۔ روٹ کے قریب مقام منتخب کریں۔" : "Your location is too far from the selected route. Choose a point within 500 m of the route."); return; }
-      setLocationError(""); setManualLocation(null); setPinMode(false); setUserLocation(location); setLocationState("ready");
+      setLocationError(""); setStopLocation(null); setManualLocation(null); setPinMode(false); setUserLocation(location); setLocationState("ready");
       if (map.current) {
         const focusBounds = map.current.getBounds().extend([location.lat, location.lng]).pad(0.15);
         map.current.setMaxBounds(focusBounds);
@@ -241,7 +241,7 @@ export function BusTracker() {
 
   useEffect(() => {
     if (selectedRoute) return;
-    setPinMode(false); setManualLocation(null); setUserLocation(null); setLocationState("idle"); setLocationError("");
+    setPinMode(false); setManualLocation(null); setStopLocation(null); setUserLocation(null); setLocationState("idle"); setLocationError("");
   }, [selectedRoute]);
 
   useEffect(() => {
@@ -250,7 +250,7 @@ export function BusTracker() {
     if (targetLocation) { const marker = L.marker([targetLocation.lat, targetLocation.lng], { icon: L.divIcon({ className: "user-marker-wrap", html: `<div class="user-marker${manualLocation ? " manual" : ""}"></div>`, iconSize: [23, 23], iconAnchor: [11, 22] }) }).addTo(currentMap); marker.bindTooltip(manualLocation ? (language === "ur" ? "منتخب مقام" : "Selected location") : (language === "ur" ? "آپ کی موجودہ لوکیشن" : "Your current location")); markers.current.push(marker); }
     const selected = data.stops.find((stop) => String(stop.stopId) === data.selectedStopId);
     const stopLat = numeric(data.stopInfo?.lat ?? selected?.lat); const stopLng = numeric(data.stopInfo?.lng ?? selected?.lng);
-    if (stopLat !== null && stopLng !== null) { const marker = L.marker([stopLat, stopLng], { icon: L.divIcon({ className: "stop-marker-wrap", html: '<div class="stop-marker"></div>', iconSize: [18, 18], iconAnchor: [9, 9] }) }).addTo(currentMap); marker.bindTooltip(language === "ur" ? "منتخب بس اسٹاپ" : "Selected bus stop"); markers.current.push(marker); }
+    if (selectedRoute && targetLocation && stopLat !== null && stopLng !== null) { const marker = L.marker([stopLat, stopLng], { icon: L.divIcon({ className: "stop-marker-wrap", html: '<div class="stop-marker"></div>', iconSize: [18, 18], iconAnchor: [9, 9] }) }).addTo(currentMap); marker.bindTooltip(language === "ur" ? "منتخب بس اسٹاپ" : "Selected bus stop"); markers.current.push(marker); }
     const fitMode = selectedRoute || "__all__";
     const shouldAutoFit = lastFittedMode.current !== fitMode;
     const busPositions: [number, number][] = [];
@@ -371,7 +371,7 @@ export function BusTracker() {
     <header className="topbar"><a className="brand" href="#top" aria-label={language === "ur" ? "بس کہاں ہے؟" : "Bus Kahan Hai?"}><img className={`brand-logo ${language === "ur" ? "brand-logo-ur" : ""}`} src={language === "ur" ? "/brand/bus-kahan-hai-ur.png" : "/brand/bus-kahan-hai-en.png"} alt={language === "ur" ? "بس کہاں ہے؟" : "Bus Kahan Hai?"} /></a><div className="topbar-actions"><div className="language-toggle" aria-label="Choose language"><button className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")}>English</button><button className={language === "ur" ? "active" : ""} onClick={() => setLanguage("ur")}>اردو</button></div><span className={`feed-pill ${visibleBusCount ? "is-live" : ""}`}><i />{visibleBusCount ? t.live : t.online}</span></div></header>
     <section className="tracker" id="top">
       <div className="map-panel"><div ref={mapNode} className="map" aria-label={language === "ur" ? "کراچی بس کا نقشہ" : "Karachi bus map"} /><div className="map-status"><span className="pulse" /><div><b>{loading ? t.refreshing : `${visibleBusCount} ${t.across}${recentlySeenBusCount ? `, ${recentlySeenBusCount} recently seen` : ""}`}</b><small>{language === "ur" ? `ہر ${selectedRoute ? 10 : 15} سیکنڈ بعد تازہ معلومات` : `Refreshes every ${selectedRoute ? 10 : 15} seconds`}</small></div></div></div>
-      <aside className="control-panel"><div className="sheet-handle" aria-hidden="true" /><div className="eyebrow-row"><div className="eyebrow">{t.eyebrow}</div>{data?.coverage && <div className="coverage-mini" role="status"><b>{data.coverage.freshRouteDirections + data.coverage.retainedRouteDirections}/{data.coverage.requestedRouteDirections}</b><span>{language === "ur" ? "فیڈ چیک" : "feeds checked"}</span></div>}</div><h1>{t.title1}<br /><em>{t.title2}</em></h1><p className="intro">{t.intro}</p>
+      <aside className="control-panel"><div className="sheet-handle" aria-hidden="true" /><div className="eyebrow-row"><div className="eyebrow">{t.eyebrow}</div>{data?.coverage && <div className="coverage-mini" role="status"><b>{data.coverage.freshRouteDirections + data.coverage.retainedRouteDirections}/{data.coverage.requestedRouteDirections}</b><span>{language === "ur" ? "فیڈ چیک" : "feeds checked"}</span><button onClick={() => void load(selectedStop, targetLocation, selectedRoute)} disabled={loading}>{loading ? (language === "ur" ? "چیک…" : "Checking…") : (language === "ur" ? "دوبارہ چیک" : "Recheck")}</button></div>}</div><h1>{t.title1}<br /><em>{t.title2}</em></h1><p className="intro">{t.intro}</p>
         <div className="nearby-heading live-heading"><div><span>{targetLocation ? t.nearby : t.activeNow}</span><b>{visibleBusCount} {t.road}</b></div>{selectedRoute && <button onClick={() => { setSelectedRoute(""); load(selectedStop, targetLocation); }}>{t.showAll}</button>}</div>
         <div className="live-route-groups" aria-label="Active buses grouped by route">{liveRouteGroups.map(({ route, buses }) => <section className="live-route-group" key={route}><button className="live-route-title" onClick={() => { setSelectedRoute(route); setUserLocation(null); setManualLocation(null); setPinMode(false); setLocationState("idle"); void load("", null, route); }}><span style={{ backgroundColor: routeLineColor(route) }}>{route}</span><b>{buses.length} {language === "ur" ? "لائیو بسیں" : buses.length === 1 ? "live bus" : "live buses"}</b></button><div className="bus-strip">{buses.map(({ bus, distance, movement, etaMinutes }, index) => <button className={selectedRoute === route ? "active" : ""} key={`${route}-${bus.plate}-${index}`} onClick={() => { setSelectedRoute(route); void load(selectedStop, targetLocation, route); }}><span style={{ backgroundColor: routeLineColor(route) }}>{route}</span><div><b>{bus.plate || "Live bus"}</b><small>{distance === null ? t.liveLocation : `${distance < 1 ? `${Math.round(distance * 1000)} m` : `${distance.toFixed(1)} km`} · ${movement === "approaching" ? (language === "ur" ? "آپ کی طرف" : "Approaching") : movement === "away" ? (language === "ur" ? "دور جا رہی ہے" : "Moving away") : (language === "ur" ? "حرکت چیک ہو رہی ہے" : "Checking movement")}${etaMinutes ? ` · ~${etaMinutes} min` : ""}`}</small></div></button>)}</div></section>)}</div>
         <label className="select-label" htmlFor="route">{t.route}</label><div className="select-wrap route-select"><select id="route" value={selectedRoute} onChange={(event) => { const route = event.target.value; setSelectedRoute(route); setUserLocation(null); setManualLocation(null); setPinMode(false); setLocationState("idle"); setLocationError(""); void load("", null, route); }}><option value="">{t.allRoutes}</option>{karachiRoutes.map((route) => <option key={route.routeCode} value={route.displayRouteCode || route.routeCode}>{route.displayRouteCode || route.routeCode} · {route.name}</option>)}</select></div>
