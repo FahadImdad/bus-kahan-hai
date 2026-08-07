@@ -33,6 +33,14 @@ button, a, select { -webkit-tap-highlight-color: transparent; }
 .install-app:hover { background: var(--red-deep); transform: translateY(-1px); box-shadow: 0 8px 20px rgba(255,23,31,.34); }
 .install-app svg { width: 16px; height: 16px; }
 @media (max-width: 560px) { .install-app span { display: none; } .install-app { padding: 0 11px; } }
+.ios-help-backdrop { position: fixed; inset: 0; z-index: 1000; background: rgba(3,31,61,.55); backdrop-filter: blur(3px); display: grid; place-items: center; padding: 22px; }
+.ios-help { position: relative; width: 100%; max-width: 360px; background: #fff; border-radius: 18px; padding: 24px 22px 20px; box-shadow: 0 24px 60px rgba(3,31,61,.35); }
+.ios-help h3 { margin: 0 0 8px; color: var(--navy-deep); font-size: 18px; font-weight: 800; }
+.ios-help p { margin: 0 0 12px; color: #526b82; font-size: 13px; }
+.ios-help ol { margin: 0; padding-left: 20px; color: var(--ink); font-size: 13px; line-height: 1.7; }
+.ios-help li { margin-bottom: 6px; }
+.ios-help .ios-share { margin-left: 4px; }
+.ios-help-close { position: absolute; top: 10px; right: 12px; width: 30px; height: 30px; border: 0; border-radius: 50%; background: var(--ice); color: var(--navy); font-size: 20px; line-height: 1; cursor: pointer; }
 .language-toggle { display: flex; padding: 3px; border: 1px solid #b9cada; border-radius: 13px; background: var(--ice); }
 .language-toggle button { min-height: 34px; border: 0; border-radius: 8px; padding: 0 11px; background: transparent; color: #667269; font-size: 10px; font-weight: 800; cursor: pointer; }
 .language-toggle button.active { background: var(--navy); color: white; box-shadow: 0 5px 14px rgba(7,54,101,.24); }
