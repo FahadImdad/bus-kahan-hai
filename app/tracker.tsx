@@ -20,8 +20,8 @@ const VEHICLE_MEMORY_STORAGE_KEY = "bus-kahan-hai-vehicle-memory";
 const MAX_REMEMBERED_VEHICLES = 500;
 type Language = "en" | "ur";
 const translations = {
-  en: { subtitle: "Karachi People’s Bus tracker", live: "Live buses", online: "Feed online", refreshing: "Refreshing live feed", across: "live buses across Karachi", refreshHint: "Refreshes every 30 seconds", eyebrow: "Karachi live bus map", title1: "How far is", title2: "your bus?", intro: "Enable location. We will show nearby active buses and your nearest stop.", locating: "Finding your location…", enabled: "Current location enabled", useLocation: "Use my current location", permission: "Allow location permission and try again", nearestSelected: "Nearest stop selected automatically", nearestHint: "Find nearby buses and stops instantly", nearby: "Near you", activeNow: "Live now", road: "buses are on the road", showAll: "Show all", liveLocation: "Live location", away: "away", route: "Bus or route", allRoutes: "All routes", from: "From", to: "To", stopsCount: "stops on this route", nearestStop: "Nearest bus stop", selectedStop: "Selected stop", refresh: "Refresh", checking: "Checking…", arrivals: "When will it arrive?", etaPending: "Live ETA is not available yet", etaHint: "Bus location and minutes will appear when the service feed updates.", disclaimer: "Independent public service. Live information depends on the operator feed." },
-  ur: { subtitle: "کراچی پیپلز بس ٹریکر", live: "لائیو بسیں", online: "فیڈ آن لائن", refreshing: "لائیو معلومات آرہی ہیں", across: "لائیو بسیں کراچی میں", refreshHint: "ہر 30 سیکنڈ بعد تازہ معلومات", eyebrow: "کراچی کا لائیو بس نقشہ", title1: "آپ کی بس", title2: "کتنی دور ہے؟", intro: "اپنی لوکیشن آن کریں، ہم قریب موجود بسیں اور نزدیک ترین اسٹاپ دکھائیں گے۔", locating: "آپ کی لوکیشن مل رہی ہے…", enabled: "موجودہ لوکیشن آن ہے", useLocation: "میری موجودہ لوکیشن استعمال کریں", permission: "لوکیشن کی اجازت دے کر دوبارہ کوشش کریں", nearestSelected: "قریب ترین اسٹاپ خود منتخب ہوگیا", nearestHint: "قریب موجود بسیں اور اسٹاپ فوراً دیکھیں", nearby: "آپ کے قریب", activeNow: "ابھی لائیو", road: "بسیں سڑک پر موجود ہیں", showAll: "سب دکھائیں", liveLocation: "لائیو لوکیشن", away: "دور", route: "بس یا روٹ", allRoutes: "تمام روٹس", from: "کہاں سے", to: "کہاں تک", stopsCount: "اس روٹ پر اسٹاپ", nearestStop: "قریب ترین بس اسٹاپ", selectedStop: "منتخب اسٹاپ", refresh: "تازہ کریں", checking: "چیک ہو رہا ہے…", arrivals: "بس کتنی دیر میں آئے گی؟", etaPending: "ابھی لائیو وقت دستیاب نہیں", etaHint: "سروس فیڈ اپ ڈیٹ ہوتے ہی بس کی لوکیشن اور منٹ یہاں دکھیں گے۔", disclaimer: "یہ ایک آزاد عوامی سروس ہے۔ لائیو معلومات آپریٹر کی فیڈ پر منحصر ہیں۔" },
+  en: { subtitle: "Karachi People’s Bus tracker", live: "Live buses", online: "Feed online", refreshing: "Refreshing live feed", across: "People’s Bus vehicles available live", refreshHint: "Refreshes every 30 seconds", eyebrow: "People’s Bus live map", title1: "Where is your", title2: "People’s Bus?", intro: "Choose a route or enable location to see available live buses and nearby stops.", locating: "Finding your location…", enabled: "Current location enabled", useLocation: "Use my current location", permission: "Allow location permission and try again", nearestSelected: "Nearest stop selected automatically", nearestHint: "Find nearby buses and stops instantly", nearby: "Near you", activeNow: "Available live", road: "People’s Bus vehicles are available live", showAll: "Show all", liveLocation: "Live location", away: "away", route: "People’s Bus or route", allRoutes: "All People’s Bus routes", from: "From", to: "To", stopsCount: "stops on this route", nearestStop: "Nearest bus stop", selectedStop: "Selected stop", refresh: "Refresh", checking: "Checking…", arrivals: "When will it arrive?", etaPending: "Live ETA is not available yet", etaHint: "Bus location and minutes will appear when the service feed updates.", disclaimer: "Live information depends on operator feed availability.", madeFor: "Made with love for Karachi commuters." },
+  ur: { subtitle: "کراچی پیپلز بس ٹریکر", live: "لائیو بسیں", online: "فیڈ آن لائن", refreshing: "لائیو معلومات آرہی ہیں", across: "پیپلز بس کی دستیاب لائیو گاڑیاں", refreshHint: "ہر 30 سیکنڈ بعد تازہ معلومات", eyebrow: "پیپلز بس کا لائیو نقشہ", title1: "آپ کی پیپلز بس", title2: "کہاں ہے؟", intro: "روٹ منتخب کریں یا اپنی لوکیشن آن کرکے دستیاب لائیو بسیں اور قریبی اسٹاپ دیکھیں۔", locating: "آپ کی لوکیشن مل رہی ہے…", enabled: "موجودہ لوکیشن آن ہے", useLocation: "میری موجودہ لوکیشن استعمال کریں", permission: "لوکیشن کی اجازت دے کر دوبارہ کوشش کریں", nearestSelected: "قریب ترین اسٹاپ خود منتخب ہوگیا", nearestHint: "قریب موجود بسیں اور اسٹاپ فوراً دیکھیں", nearby: "آپ کے قریب", activeNow: "ابھی دستیاب", road: "پیپلز بس کی گاڑیاں لائیو دستیاب ہیں", showAll: "سب دکھائیں", liveLocation: "لائیو لوکیشن", away: "دور", route: "پیپلز بس یا روٹ", allRoutes: "پیپلز بس کے تمام روٹس", from: "کہاں سے", to: "کہاں تک", stopsCount: "اس روٹ پر اسٹاپ", nearestStop: "قریب ترین بس اسٹاپ", selectedStop: "منتخب اسٹاپ", refresh: "تازہ کریں", checking: "چیک ہو رہا ہے…", arrivals: "بس کتنی دیر میں آئے گی؟", etaPending: "ابھی لائیو وقت دستیاب نہیں", etaHint: "سروس فیڈ اپ ڈیٹ ہوتے ہی بس کی لوکیشن اور منٹ یہاں دکھیں گے۔", disclaimer: "لائیو معلومات آپریٹر فیڈ کی دستیابی پر منحصر ہیں۔", madeFor: "کراچی کے مسافروں کے لیے محبت سے بنایا گیا۔" },
 } as const;
 
 function numeric(value: unknown) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : null; }
@@ -127,6 +127,24 @@ function distanceToRouteKm(point: Location, paths: RoutePath[]) {
   });
   return nearest;
 }
+function snapToRoute(point: Location, paths: RoutePath[]) {
+  const longitudeScale = Math.cos(point.lat * Math.PI / 180);
+  let closest = point; let closestDistance = Number.POSITIVE_INFINITY;
+  paths.forEach((path) => {
+    const points = (path.pointList ?? []).map((item) => ({ lat: numeric(item.lat), lng: numeric(item.lng) })).filter((item): item is Location => item.lat !== null && item.lng !== null);
+    for (let index = 1; index < points.length; index += 1) {
+      const start = points[index - 1]; const end = points[index];
+      const dx = (end.lng - start.lng) * longitudeScale; const dy = end.lat - start.lat;
+      const px = (point.lng - start.lng) * longitudeScale; const py = point.lat - start.lat;
+      const lengthSquared = dx * dx + dy * dy;
+      const ratio = lengthSquared ? Math.max(0, Math.min(1, (px * dx + py * dy) / lengthSquared)) : 0;
+      const candidate = { lat: start.lat + (end.lat - start.lat) * ratio, lng: start.lng + (end.lng - start.lng) * ratio };
+      const distance = distanceKm(point, { stopId: "route", ...candidate });
+      if (distance < closestDistance) { closestDistance = distance; closest = candidate; }
+    }
+  });
+  return closestDistance <= .8 ? closest : point;
+}
 function stopsForRoute(data: TransitData | null, routeCode: string) {
   if (!data || !routeCode) return data?.stops ?? [];
   const matchingPaths = [...(data.referenceRoutePaths ?? []), ...(data.routePaths ?? [])].filter((path) => canonicalRouteCode(path.displayRouteCode) === canonicalRouteCode(routeCode));
@@ -136,13 +154,6 @@ function stopsForRoute(data: TransitData | null, routeCode: string) {
     unique.set(String(stop.stopId), { stopId: stop.stopId, name: stop.stopName, lat: stop.lat, lng: stop.lng });
   }));
   return unique.size ? [...unique.values()] : data.stops;
-}
-function offsetRoute(points: readonly (readonly [number, number])[], offset: number, currentMap: LeafletMap) {
-  if (!offset) return points.map(([lat, lng]) => [lat, lng] as [number, number]);
-  return points.map(([lat, lng]) => {
-    const point = currentMap.latLngToLayerPoint([lat, lng]);
-    return currentMap.layerPointToLatLng([point.x + offset, point.y + offset * .32]);
-  });
 }
 function etaLabel(value?: string) {
   if (!value) return "ETA pending";
@@ -159,13 +170,13 @@ function etaLabel(value?: string) {
 export function BusTracker() {
   const mapNode = useRef<HTMLDivElement>(null); const map = useRef<LeafletMap | null>(null); const leaflet = useRef<typeof import("leaflet").default | null>(null); const baseMapLayer = useRef<Layer | null>(null); const markers = useRef<Layer[]>([]); const lastFittedMode = useRef("");
   const activeRequest = useRef<AbortController | null>(null); const requestSequence = useRef(0);
-  const motionHistory = useRef(new Map<string, MotionSample[]>()); const pinModeRef = useRef(false);
+  const motionHistory = useRef(new Map<string, MotionSample[]>()); const pinModeRef = useRef(false); const autoLocationRequested = useRef(false);
   const [data, setData] = useState<TransitData | null>(null); const [selectedStop, setSelectedStop] = useState(""); const [selectedRoute, setSelectedRoute] = useState("");
   const [userLocation, setUserLocation] = useState<Location | null>(null); const [locationState, setLocationState] = useState<"idle" | "loading" | "ready" | "error">("idle");
-  const [manualLocation, setManualLocation] = useState<Location | null>(null); const [stopLocation, setStopLocation] = useState<Location | null>(null); const [pinMode, setPinMode] = useState(false); const [mapRevision, setMapRevision] = useState(0);
+  const [manualLocation, setManualLocation] = useState<Location | null>(null); const [stopLocation, setStopLocation] = useState<Location | null>(null); const [pinMode, setPinMode] = useState(false);
   const [locationError, setLocationError] = useState("");
   const [mapReady, setMapReady] = useState(false);
-  const [language, setLanguage] = useState<Language>("en");
+  const [language, setLanguage] = useState<Language>("en"); const [liveFleetExpanded, setLiveFleetExpanded] = useState(false); const [inactiveFleetExpanded, setInactiveFleetExpanded] = useState(false); const [routeStopsExpanded, setRouteStopsExpanded] = useState(false);
   const [loading, setLoading] = useState(true); const [error, setError] = useState("");
 
   const load = useCallback(async (stopId?: string, location?: Location | null, routeCode?: string, silent = false) => {
@@ -199,6 +210,16 @@ export function BusTracker() {
   }, [language]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (autoLocationRequested.current || !navigator.geolocation) return;
+    autoLocationRequested.current = true; setLocationState("loading");
+    navigator.geolocation.getCurrentPosition(({ coords }) => {
+      const location = { lat: coords.latitude, lng: coords.longitude };
+      setUserLocation(location); setLocationState("ready"); setLocationError("");
+      map.current?.flyTo([location.lat, location.lng], 13, { animate: true, duration: .65 });
+      void load("", location);
+    }, () => setLocationState("idle"), { enableHighAccuracy: false, timeout: 8_000, maximumAge: 120_000 });
+  }, [load]);
   useEffect(() => { const saved = window.localStorage.getItem("bus-language"); if (saved === "ur") setLanguage("ur"); }, []);
   useEffect(() => { document.documentElement.lang = language; document.documentElement.dir = language === "ur" ? "rtl" : "ltr"; window.localStorage.setItem("bus-language", language); }, [language]);
   useEffect(() => { const node = mapNode.current; if (!node) return; node.classList.toggle("language-en", language === "en"); node.classList.toggle("pin-mode", pinMode); }, [language, pinMode]);
@@ -210,8 +231,9 @@ export function BusTracker() {
     void import("leaflet").then(({ default: L }) => {
       if (cancelled || !mapNode.current || map.current) return;
       leaflet.current = L;
-      map.current = L.map(mapNode.current, { zoomControl: true, attributionControl: true, minZoom: 10, maxZoom: 18, maxBounds: [[24.65, 66.75], [25.18, 67.45]], maxBoundsViscosity: 0.9 }).setView([KARACHI[1], KARACHI[0]], 11);
-      map.current.on("zoomend", () => setMapRevision((value) => value + 1));
+      map.current = L.map(mapNode.current, { zoomControl: true, attributionControl: true, preferCanvas: true, zoomAnimation: true, fadeAnimation: false, markerZoomAnimation: true, zoomAnimationThreshold: 8, wheelDebounceTime: 40, wheelPxPerZoomLevel: 120, minZoom: 9, maxZoom: 18, maxBounds: [[24.52, 66.55], [25.35, 67.65]], maxBoundsViscosity: 1 }).setView([KARACHI[1], KARACHI[0]], 10);
+      const updateBusScale = () => mapNode.current?.style.setProperty("--bus-marker-scale", String(Math.max(.52, Math.min(1.15, .52 + (map.current!.getZoom() - 9) * .12))));
+      map.current.on("zoom zoomend", updateBusScale); updateBusScale();
       window.setTimeout(() => { map.current?.invalidateSize(); setMapReady(true); }, 100);
     });
     return () => { cancelled = true; map.current?.remove(); map.current = null; leaflet.current = null; baseMapLayer.current = null; };
@@ -249,16 +271,21 @@ export function BusTracker() {
     const currentMap = map.current; const L = leaflet.current;
     if (!currentMap || !L || !mapReady) return;
     baseMapLayer.current?.remove();
-    const isUrdu = language === "ur";
-    const url = isUrdu
-      ? "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+    const url = language === "ur" ? "https://tile.openstreetmap.org/{z}/{x}/{y}.png" : "https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png";
     baseMapLayer.current = L.tileLayer(url, {
       maxZoom: 18,
-      noWrap: true,
-      bounds: [[24.55, 66.65], [25.3, 67.6]],
-      attribution: isUrdu ? "© OpenStreetMap contributors" : "Tiles © Esri",
-    }).addTo(currentMap);
+      keepBuffer: 12,
+      updateWhenIdle: true,
+      updateWhenZooming: false,
+      updateInterval: 150,
+      attribution: language === "ur" ? "© OpenStreetMap" : "© OpenStreetMap © CARTO",
+    });
+    baseMapLayer.current.on("tileerror", (event: { tile: HTMLImageElement; coords: { x: number; y: number; z: number } }) => {
+      const { x, y, z } = event.coords;
+      if (!event.tile.src.includes("tile.openstreetmap.org")) event.tile.src = `https://tile.openstreetmap.org/${z}/${x}/${y}.png`;
+    });
+    baseMapLayer.current.on("load", () => currentMap.invalidateSize({ pan: false }));
+    baseMapLayer.current.addTo(currentMap);
   }, [language, mapReady]);
 
   const locateMe = useCallback(() => {
@@ -284,8 +311,9 @@ export function BusTracker() {
 
   useEffect(() => {
     if (selectedRoute) return;
-    setPinMode(false); setManualLocation(null); setStopLocation(null); setUserLocation(null); setLocationState("idle"); setLocationError("");
+    setPinMode(false); setManualLocation(null); setStopLocation(null); setLocationError("");
   }, [selectedRoute]);
+  useEffect(() => { setRouteStopsExpanded(false); }, [selectedRoute]);
 
   useEffect(() => {
     const currentMap = map.current; const L = leaflet.current; if (!currentMap || !L || !data) return;
@@ -300,9 +328,11 @@ export function BusTracker() {
     const referencePaths = data.referenceRoutePaths ?? [];
     const selectedReferencePaths = selectedRoute ? referencePaths.filter((path) => canonicalRouteCode(path.displayRouteCode) === canonicalRouteCode(selectedRoute)) : [];
     const displayRoutePaths = selectedRoute && !selectedReferencePaths.length ? (data.routePaths ?? []) : referencePaths.length ? referencePaths.filter((path) => path.direction !== "1") : (data.routePaths ?? []);
-    data.buses.filter((bus) => isKarachiBus(bus) && (!selectedRoute || bus.routeCode === selectedRoute)).forEach((bus) => {
+    data.buses.filter((bus) => isKarachiBus(bus) && (!selectedRoute || canonicalRouteCode(bus.displayRouteCode || bus.routeCode) === canonicalRouteCode(selectedRoute))).forEach((bus) => {
       const lat = numeric(bus.lat ?? bus.latitude); const lng = numeric(bus.lng ?? bus.longitude); if (lat === null || lng === null) return;
-      busPositions.push([lng, lat]);
+      const routePathsForBus = [...(data.referenceRoutePaths ?? []), ...(data.routePaths ?? [])].filter((path) => canonicalRouteCode(path.displayRouteCode) === canonicalRouteCode(bus.displayRouteCode || bus.routeCode));
+      const snapped = snapToRoute({ lat, lng }, routePathsForBus);
+      busPositions.push([snapped.lng, snapped.lat]);
       const label = bus.displayRouteCode || "BUS";
       const color = routeLineColor(label);
       const isRecentlySeen = bus.trackingStatus === "recently_seen";
@@ -310,24 +340,23 @@ export function BusTracker() {
         ? lastSeenLabel(bus, language)
         : (language === "ur" ? "ابھی لائیو" : "Live now");
       const vehicleLabel = bus.plate ?? (language === "ur" ? "بس گاڑی" : "Bus vehicle");
-      const marker = L.marker([lat, lng], { icon: L.divIcon({ className: "bus-marker-wrap", html: `<button class="bus-marker${isRecentlySeen ? " recently-seen" : ""}" style="background:${color}" aria-label="${statusLabel} bus ${label}">${label}</button>`, iconSize: [48, 30], iconAnchor: [24, 15] }) }).addTo(currentMap);
+      const bearing = numeric(bus.bearing) ?? 0;
+      const busKind = label.toLowerCase().includes("pink") ? "pink" : label.toUpperCase().startsWith("EV") ? "white" : "red";
+      const marker = L.marker([snapped.lat, snapped.lng], { icon: L.divIcon({ className: "bus-marker-wrap", html: `<button class="bus-map-icon ${busKind}${bearing > 0 && bearing < 180 ? " facing-right" : ""}${isRecentlySeen ? " recently-seen" : ""}" style="--route-color:${color}" aria-label="${statusLabel} bus ${label}"><img src="/bus-map-icon.png" alt=""><b>${label}</b></button>`, iconSize: [54, 48], iconAnchor: [27, 45], popupAnchor: [0, -45] }) }).addTo(currentMap);
       marker.bindPopup(`<div dir="${language === "ur" ? "rtl" : "ltr"}"><strong>${label}</strong><br>${vehicleLabel}<br>${statusLabel}</div>`); markers.current.push(marker);
     });
     const operatingAreaPoints: Array<[number, number]> = busPositions.map(([lng, lat]) => [lat, lng]);
-    const activeRouteCodes = new Set(data.buses.filter(isKarachiBus).map((bus) => canonicalRouteCode(bus.displayRouteCode || bus.routeCode)).filter(Boolean));
     if (!selectedRoute) {
       const orderedPaths = [...displayRoutePaths].sort((a, b) => canonicalRouteCode(a.displayRouteCode).localeCompare(canonicalRouteCode(b.displayRouteCode), undefined, { numeric: true }));
-      orderedPaths.forEach((path, index) => {
+      orderedPaths.forEach((path) => {
         const points = (path.pointList ?? []).map((point) => [numeric(point.lat), numeric(point.lng)] as const).filter((point): point is readonly [number, number] => point[0] !== null && point[1] !== null && point[0] >= 24.65 && point[0] <= 25.18 && point[1] >= 66.75 && point[1] <= 67.45);
         if (points.length < 2) return;
-        if (!activeRouteCodes.size || activeRouteCodes.has(canonicalRouteCode(path.displayRouteCode))) {
-          operatingAreaPoints.push(...points.map(([lat, lng]) => [lat, lng] as [number, number]));
-        }
-        const coordinates = offsetRoute(points, ((index % 9) - 4) * 2.1, currentMap);
-        const casing = L.polyline(coordinates, { color: "#ffffff", weight: 0, opacity: 0, lineCap: "round", lineJoin: "round", interactive: false }).addTo(currentMap);
-        const line = L.polyline(coordinates, { color: routeLineColor(path.displayRouteCode), weight: 4, opacity: 0.96, lineCap: "round", lineJoin: "round" }).addTo(currentMap);
-        line.bindTooltip(path.displayRouteCode || (language === "ur" ? "بس روٹ" : "Bus route"), { sticky: true }); markers.current.push(line);
-        markers.current.push(casing);
+        operatingAreaPoints.push(...points.map(([lat, lng]) => [lat, lng] as [number, number]));
+        const coordinates = points.map(([lat, lng]) => [lat, lng] as [number, number]);
+        const line = L.polyline(coordinates, { color: routeLineColor(path.displayRouteCode), weight: 4, opacity: .96, lineCap: "round", lineJoin: "round" }).addTo(currentMap);
+        line.bindTooltip(path.displayRouteCode || (language === "ur" ? "بس روٹ" : "Bus route"), { sticky: true });
+        line.on("click", () => { const route = path.displayRouteCode || path.routeCode; if (!route) return; setSelectedRoute(route); setUserLocation(null); setManualLocation(null); setStopLocation(null); setSelectedStop(""); setPinMode(false); setLocationState("idle"); setLocationError(""); void load("", null, route); });
+        markers.current.push(line);
       });
     }
     // A route can contain the same geometry in both travel directions. Joining
@@ -366,12 +395,12 @@ export function BusTracker() {
     if (!selectedRoute && operatingAreaPoints.length) {
       const operatingBounds = L.latLngBounds(operatingAreaPoints);
       if (targetLocation) operatingBounds.extend([targetLocation.lat, targetLocation.lng]);
-      const operatingNavigationBounds = operatingBounds.pad(0.04);
+      const operatingNavigationBounds = operatingBounds.pad(0.08);
       currentMap.setMaxBounds(operatingNavigationBounds);
-      currentMap.setMinZoom(Math.max(10, currentMap.getBoundsZoom(operatingNavigationBounds, false, [30, 30])));
-      if (shouldAutoFit) { currentMap.fitBounds(operatingNavigationBounds, { padding: [30, 30], maxZoom: 13, animate: true }); lastFittedMode.current = fitMode; }
+      currentMap.setMinZoom(9);
+      if (shouldAutoFit) { currentMap.setView([24.91, 67.04], 10, { animate: false }); lastFittedMode.current = fitMode; }
     }
-  }, [data, language, manualLocation, mapReady, mapRevision, selectedRoute, targetLocation]);
+  }, [data, language, manualLocation, mapReady, selectedRoute, targetLocation]);
 
   const availableStops = useMemo(() => stopsForRoute(data, selectedRoute), [data, selectedRoute]);
   const stopName = useMemo(() => availableStops.find((stop) => String(stop.stopId) === selectedStop)?.name || data?.stopInfo?.busStopName || data?.stopInfo?.name || `Stop ${selectedStop}`, [availableStops, data?.stopInfo, selectedStop]);
@@ -410,7 +439,7 @@ export function BusTracker() {
     const path = (data?.routePaths ?? []).find((item) => item.displayRouteCode === selectedRoute && (item.busStopList?.length ?? 0) > 1) ?? data?.routePaths?.[0];
     const stops = path?.busStopList ?? [];
     if (!stops.length) return null;
-    return { from: stops[0]?.stopName || "Starting stop", to: stops[stops.length - 1]?.stopName || "Last stop", stops: stops.length };
+    return { from: stops[0]?.stopName || "Starting stop", to: stops[stops.length - 1]?.stopName || "Last stop", stops: stops.length, stopNames: stops.map((stop, index) => stop.stopName || `Stop ${index + 1}`) };
   }, [data?.routePaths, selectedRoute]);
   const karachiRoutes = useMemo(() => (data?.routes ?? []).filter((route) => /^(R\d+|Pink-?\d+|EV-?0*\d+)$/i.test(route.displayRouteCode || route.routeCode || "")), [data?.routes]);
   const t = translations[language];
@@ -421,19 +450,33 @@ export function BusTracker() {
   return <main className="app-shell" dir={language === "ur" ? "rtl" : "ltr"}>
     <header className="topbar"><a className="brand" href="#top" aria-label={language === "ur" ? "بس کہاں ہے؟" : "Bus Kahan Hai?"}><img className={`brand-logo ${language === "ur" ? "brand-logo-ur" : ""}`} src={language === "ur" ? logoUr.src : logoEn.src} alt={language === "ur" ? "بس کہاں ہے؟" : "Bus Kahan Hai?"} /></a><div className="topbar-actions"><div className="language-toggle" aria-label="Choose language"><button className={language === "en" ? "active" : ""} onClick={() => setLanguage("en")}>English</button><button className={language === "ur" ? "active" : ""} onClick={() => setLanguage("ur")}>اردو</button></div><span className={`feed-pill ${visibleBusCount ? "is-live" : ""}`}><i />{visibleBusCount ? t.live : t.online}</span></div></header>
     <section className="tracker" id="top">
-      <div className="map-panel"><div ref={mapNode} className="map" aria-label={language === "ur" ? "کراچی بس کا نقشہ" : "Karachi bus map"} /><div className="map-status"><span className="pulse" /><div><b>{loading ? t.refreshing : `${visibleBusCount} ${t.across}${recentlySeenBusCount ? `, ${recentlySeenBusCount} recently seen` : ""}`}</b><small>{language === "ur" ? `ہر ${selectedRoute ? 10 : 15} سیکنڈ بعد تازہ معلومات` : `Refreshes every ${selectedRoute ? 10 : 15} seconds`}</small></div></div></div>
-      <aside className="control-panel"><div className="sheet-handle" aria-hidden="true" /><div className="eyebrow-row"><div className="eyebrow">{t.eyebrow}</div>{data?.coverage && <div className="coverage-mini" role="status"><b>{data.coverage.freshRouteDirections + data.coverage.retainedRouteDirections}/{data.coverage.requestedRouteDirections}</b><span>{language === "ur" ? "فیڈ چیک" : "feeds checked"}</span><button onClick={() => void load(selectedStop, targetLocation, selectedRoute)} disabled={loading}>{loading ? (language === "ur" ? "چیک…" : "Checking…") : (language === "ur" ? "دوبارہ چیک" : "Recheck")}</button></div>}</div><h1>{t.title1}<br /><em>{t.title2}</em></h1><p className="intro">{t.intro}</p>
-        <div className="nearby-heading live-heading"><div><span>{targetLocation ? t.nearby : t.activeNow}</span><b>{visibleBusCount} {t.road}</b></div>{selectedRoute && <button onClick={() => { setSelectedRoute(""); load(selectedStop, targetLocation); }}>{t.showAll}</button>}</div>
-        <div className="live-route-groups" aria-label="Active buses grouped by route">{liveRouteGroups.map(({ route, buses }) => <section className="live-route-group" key={route}><button className="live-route-title" onClick={() => { setSelectedRoute(route); setUserLocation(null); setManualLocation(null); setStopLocation(null); setSelectedStop(""); setPinMode(false); setLocationState("idle"); void load("", null, route); }}><span style={{ backgroundColor: routeLineColor(route) }}>{route}</span><b>{buses.length} {language === "ur" ? "لائیو بسیں" : buses.length === 1 ? "live moving bus" : "live moving buses"}</b></button><div className="bus-strip">{buses.map(({ bus, distance, movement, etaMinutes }, index) => <button className={selectedRoute === route ? "active" : ""} key={`${route}-${bus.plate}-${index}`} onClick={() => { setSelectedRoute(route); void load(selectedStop, targetLocation, route); }}><span style={{ backgroundColor: routeLineColor(route) }}>{route}</span><div><b>{bus.plate || "Live bus"}</b><small>{distance === null ? (language === "ur" ? "لائیو حرکت" : "Live moving") : `${distance < 1 ? `${Math.round(distance * 1000)} m` : `${distance.toFixed(1)} km`} · ${movement === "approaching" ? (language === "ur" ? "آپ کی طرف" : "Approaching") : movement === "away" ? (language === "ur" ? "دور جا رہی ہے" : "Moving away") : (language === "ur" ? "حرکت چیک ہو رہی ہے" : "Checking movement")}${etaMinutes ? ` · ~${etaMinutes} min` : ""}`}</small></div></button>)}</div></section>)}</div>
-        {inactiveBuses.length > 0 && <section className="inactive-fleet" aria-label={language === "ur" ? "غیر فعال بسوں کے آخری مقامات" : "Saved last locations of inactive buses"}><div className="inactive-heading"><span>{language === "ur" ? "غیر فعال — آخری مقام محفوظ" : "Inactive — last location saved"}</span><b>{inactiveBuses.length}</b></div><div className="inactive-list">{inactiveBuses.slice(0, 12).map((bus) => { const route = bus.displayRouteCode || bus.routeCode || "BUS"; return <article key={clientVehicleKey(bus)}><span style={{ backgroundColor: routeLineColor(route) }}>{route}</span><div><b>{bus.plate || (language === "ur" ? "بس گاڑی" : "Bus vehicle")}</b><small>{lastSeenLabel(bus, language)} · {language === "ur" ? "فعال ہوتے ہی لائیو ہو جائے گی" : "Returns to live when active"}</small></div></article>; })}</div></section>}
+      <div className="map-panel"><div ref={mapNode} className="map" aria-label={language === "ur" ? "کراچی بس کا نقشہ" : "Karachi bus map"} /><div className="map-status"><span className="pulse" /><div><b>{loading ? t.refreshing : `${visibleBusCount} ${t.across}${recentlySeenBusCount ? `, ${recentlySeenBusCount} recently seen` : ""}`}</b><small>{language === "ur" ? `ہر ${selectedRoute ? 10 : 15} سیکنڈ بعد تازہ معلومات` : `Refreshes every ${selectedRoute ? 10 : 15} seconds`}</small></div></div>{selectedRoute && <button className="map-all-routes" onClick={() => { setSelectedRoute(""); setUserLocation(null); setManualLocation(null); setStopLocation(null); setSelectedStop(""); setPinMode(false); setLocationState("idle"); setLocationError(""); void load("", null, ""); }}>{language === "ur" ? "تمام روٹس" : "← All routes"}</button>}</div>
+      <aside className="control-panel"><div className="sheet-handle" aria-hidden="true" /><div className="eyebrow-row"><div className="eyebrow">{t.eyebrow}</div></div><h1>{t.title1}<br /><em>{t.title2}</em></h1><p className="intro">{t.intro}</p>
+        <div className="nearby-heading live-heading"><div><span>{targetLocation ? t.nearby : t.activeNow}</span><b>{visibleBusCount} {t.road}</b></div><button className="fleet-toggle" onClick={() => setLiveFleetExpanded((value) => !value)} aria-expanded={liveFleetExpanded}>{language === "ur" ? (liveFleetExpanded ? "لائیو بسیں چھپائیں" : "لائیو بسیں دیکھیں") : (liveFleetExpanded ? "Hide live buses" : "View live buses")} <i>{liveFleetExpanded ? "▲" : "▼"}</i></button></div>
+        {liveFleetExpanded && <div className="live-route-groups" aria-label="Active buses grouped by route">{liveRouteGroups.map(({ route, buses }) => <section className="live-route-group" key={route}><button className="live-route-title" onClick={() => { setSelectedRoute(route); setUserLocation(null); setManualLocation(null); setStopLocation(null); setSelectedStop(""); setPinMode(false); setLocationState("idle"); void load("", null, route); }}><span style={{ backgroundColor: routeLineColor(route) }}>{route}</span><b>{buses.length} {language === "ur" ? "لائیو بسیں" : buses.length === 1 ? "live moving bus" : "live moving buses"}</b></button><div className="bus-strip">{buses.map(({ bus, distance, movement, etaMinutes }, index) => <button className={selectedRoute === route ? "active" : ""} key={`${route}-${bus.plate}-${index}`} onClick={() => { setSelectedRoute(route); void load(selectedStop, targetLocation, route); }}><span style={{ backgroundColor: routeLineColor(route) }}>{route}</span><div><b>{bus.plate || "Live bus"}</b><small>{distance === null ? (language === "ur" ? "لائیو حرکت" : "Live moving") : `${distance < 1 ? `${Math.round(distance * 1000)} m` : `${distance.toFixed(1)} km`} · ${movement === "approaching" ? (language === "ur" ? "آپ کی طرف" : "Approaching") : movement === "away" ? (language === "ur" ? "دور جا رہی ہے" : "Moving away") : (language === "ur" ? "حرکت چیک ہو رہی ہے" : "Checking movement")}${etaMinutes ? ` · ~${etaMinutes} min` : ""}`}</small></div></button>)}</div></section>)}</div>}
+        <section className="inactive-fleet" aria-label={language === "ur" ? "غیر فعال بسوں کے آخری مقامات" : "Saved last locations of inactive buses"}><button className="inactive-heading" onClick={() => setInactiveFleetExpanded((value) => !value)} aria-expanded={inactiveFleetExpanded}><span>{language === "ur" ? "غیر فعال بسیں — محفوظ آخری مقام" : "Inactive buses — saved locations"}</span><b>{inactiveBuses.length}</b><i>{language === "ur" ? (inactiveFleetExpanded ? "چھپائیں ▲" : "فہرست دیکھیں ▼") : (inactiveFleetExpanded ? "Hide list ▲" : "View saved buses ▼")}</i></button>{inactiveFleetExpanded && <div className="inactive-list">{inactiveBuses.length === 0 ? <p className="inactive-empty">{language === "ur" ? "اس روٹ پر کوئی محفوظ غیر فعال بس نہیں ہے۔" : "No inactive bus is saved for this route."}</p> : inactiveBuses.slice(0, 12).map((bus) => { const route = bus.displayRouteCode || bus.routeCode || "BUS"; return <article key={clientVehicleKey(bus)}><span style={{ backgroundColor: routeLineColor(route) }}>{route}</span><div><b>{bus.plate || (language === "ur" ? "بس گاڑی" : "Bus vehicle")}</b><small>{lastSeenLabel(bus, language)} · {language === "ur" ? "فعال ہوتے ہی لائیو ہو جائے گی" : "Returns to live when active"}</small></div></article>; })}</div>}</section>
         <label className="select-label" htmlFor="route">{t.route}</label><div className="select-wrap route-select"><select id="route" value={selectedRoute} onChange={(event) => { const route = event.target.value; setSelectedRoute(route); setUserLocation(null); setManualLocation(null); setStopLocation(null); setSelectedStop(""); setPinMode(false); setLocationState("idle"); setLocationError(""); void load("", null, route); }}><option value="">{t.allRoutes}</option>{karachiRoutes.map((route) => <option key={route.routeCode} value={route.displayRouteCode || route.routeCode}>{route.displayRouteCode || route.routeCode} · {route.name}</option>)}</select></div>
-        {routeSummary && <div className="route-summary"><span className="route-summary-code" style={{ backgroundColor: routeLineColor(selectedRoute) }}>{selectedRoute}</span><div className="route-journey"><div><i style={{ borderColor: routeLineColor(selectedRoute), color: routeLineColor(selectedRoute) }}>A</i><span><small>{t.from}</small><b>{routeSummary.from}</b></span></div><div className="route-connector" style={{ backgroundColor: routeLineColor(selectedRoute) }} /><div><i style={{ borderColor: routeLineColor(selectedRoute), color: routeLineColor(selectedRoute) }}>B</i><span><small>{t.to}</small><b>{routeSummary.to}</b></span></div></div><small className="route-stop-count">{routeSummary.stops} {t.stopsCount}</small></div>}
+        {routeSummary && <div className="route-summary"><span className="route-summary-code" style={{ backgroundColor: routeLineColor(selectedRoute) }}>{selectedRoute}</span><div className="route-journey"><div><i style={{ borderColor: routeLineColor(selectedRoute), color: routeLineColor(selectedRoute) }}>A</i><span><small>{t.from}</small><b>{routeSummary.from}</b></span></div><div className="route-connector" style={{ backgroundColor: routeLineColor(selectedRoute) }} /><div><i style={{ borderColor: routeLineColor(selectedRoute), color: routeLineColor(selectedRoute) }}>B</i><span><small>{t.to}</small><b>{routeSummary.to}</b></span></div></div><button className="route-stops-toggle" onClick={() => setRouteStopsExpanded((value) => !value)} aria-expanded={routeStopsExpanded}><span>{routeSummary.stops} {t.stopsCount}</span><b>{language === "ur" ? (routeStopsExpanded ? "اسٹاپ چھپائیں ▲" : "تمام اسٹاپ دیکھیں ▼") : (routeStopsExpanded ? "Hide stops ▲" : "View all stops ▼")}</b></button>{routeStopsExpanded && <ol className="route-stops-list">{routeSummary.stopNames.map((name, index) => <li key={`${name}-${index}`}><i style={{ borderColor: routeLineColor(selectedRoute) }}>{index + 1}</i><span>{name}</span></li>)}</ol>}</div>}
         {!selectedRoute && <div className="route-required" role="status">{language === "ur" ? "جاری رکھنے کے لیے پہلے ایک بس روٹ منتخب کریں" : "Select one bus route to continue."}</div>}
-        {selectedRoute && <div className="location-options"><button className={`location-button ${locationState === "ready" && !manualLocation ? "is-ready" : locationState === "error" ? "has-error" : ""}`} onClick={locateMe} disabled={locationState === "loading"}><span className="location-dot" /><span><b>{locationState === "loading" ? t.locating : locationState === "ready" && !manualLocation ? t.enabled : t.useLocation}</b><small>{locationState === "ready" && !manualLocation ? (language === "ur" ? "ہٹانے کے لیے دوبارہ کلک کریں" : "Click again to remove") : locationState === "error" ? locationError || t.permission : t.nearestHint}</small></span></button><button className={`location-button pin-button ${pinMode || manualLocation ? "is-ready" : ""}`} onClick={() => { if (manualLocation) { setManualLocation(null); setPinMode(false); setLocationError(""); void load(selectedStop, null, selectedRoute); } else { setUserLocation(null); setStopLocation(null); setSelectedStop(""); setLocationState("idle"); setLocationError(""); setPinMode((value) => !value); } }}><span className="pin-dot" /><span><b>{language === "ur" ? "نقشے پر مقام منتخب کریں" : "Choose a point on the map"}</b><small>{manualLocation ? (language === "ur" ? "ہٹانے کے لیے دوبارہ کلک کریں" : "Click again to remove") : pinMode ? (language === "ur" ? "منسوخ کرنے کے لیے دوبارہ کلک کریں" : "Click again to cancel") : (language === "ur" ? "پن لگا کر بس کا وقت دیکھیں" : "Drop a pin to estimate arrivals")}</small></span></button></div>}
+        {selectedRoute && <div className="location-options"><button className={`location-button ${locationState === "ready" && !manualLocation ? "is-ready" : locationState === "error" ? "has-error" : ""}`} onClick={locateMe} disabled={locationState === "loading"}><span className="location-dot" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><circle className="icon-fill" cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></span><span><b>{locationState === "loading" ? t.locating : locationState === "ready" && !manualLocation ? t.enabled : t.useLocation}</b><small>{locationState === "ready" && !manualLocation ? (language === "ur" ? "ہٹانے کے لیے دوبارہ کلک کریں" : "Click again to remove") : locationState === "error" ? locationError || t.permission : t.nearestHint}</small></span></button><button className={`location-button pin-button ${pinMode || manualLocation ? "is-ready" : ""}`} onClick={() => { if (manualLocation) { setManualLocation(null); setPinMode(false); setLocationError(""); void load(selectedStop, null, selectedRoute); } else { setUserLocation(null); setStopLocation(null); setSelectedStop(""); setLocationState("idle"); setLocationError(""); setPinMode((value) => !value); } }}><span className="pin-dot" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 22s7-6.4 7-13A7 7 0 0 0 5 9c0 6.6 7 13 7 13Z"/><circle cx="12" cy="9" r="2.5"/></svg></span><span><b>{language === "ur" ? "نقشے پر مقام منتخب کریں" : "Choose a point on the map"}</b><small>{manualLocation ? (language === "ur" ? "ہٹانے کے لیے دوبارہ کلک کریں" : "Click again to remove") : pinMode ? (language === "ur" ? "منسوخ کرنے کے لیے دوبارہ کلک کریں" : "Click again to cancel") : (language === "ur" ? "پن لگا کر بس کا وقت دیکھیں" : "Drop a pin to estimate arrivals")}</small></span></button></div>}
         {selectedRoute && <><label className="select-label" htmlFor="stop">{language === "ur" ? "اس روٹ کا بس اسٹاپ" : "Bus stop on this route"}</label><div className="select-wrap"><select id="stop" value={selectedStop} onChange={(event) => { const stopId = event.target.value; const stop = availableStops.find((item) => String(item.stopId) === stopId); const lat = numeric(stop?.lat); const lng = numeric(stop?.lng); setSelectedStop(stopId); setUserLocation(null); setManualLocation(null); setPinMode(false); setLocationState("idle"); if (stopId && lat !== null && lng !== null) { const location = { lat, lng }; setStopLocation(location); void load(stopId, location, selectedRoute); } else { setStopLocation(null); void load("", null, selectedRoute); } }}><option value="">{language === "ur" ? "بس اسٹاپ منتخب کریں" : "Select a bus stop"}</option>{availableStops.map((stop) => <option key={String(stop.stopId)} value={String(stop.stopId)}>{stop.name || `Stop ${stop.stopId}`}</option>)}</select></div>{selectedStop && targetLocation && (error ? <div className="notice error" role="alert">{error}</div> : <div className="stop-card"><div><span>{t.selectedStop}</span><strong>{stopName}</strong></div><button onClick={() => load(selectedStop, targetLocation, selectedRoute)} disabled={loading}>{loading ? t.checking : t.refresh}</button></div>)}</>}
-        {selectedRoute && selectedStop && targetLocation && <section className="arrivals" aria-live="polite"><div className="section-title"><h2>{t.arrivals}</h2><span>{data?.checkedAt ? new Date(data.checkedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}</span></div>
+        {selectedRoute && selectedStop && targetLocation && arrivals.length > 0 && <section className="arrivals" aria-live="polite"><div className="section-title"><h2>{t.arrivals}</h2><span>{data?.checkedAt ? new Date(data.checkedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}</span></div>
           {arrivals.length ? arrivals.slice(0, 4).map((arrival, index) => <article className="arrival-row" key={`${arrival.routeCode}-${index}`}><span className="route-badge" style={{ backgroundColor: routeLineColor(arrival.displayRouteCode || arrival.routeCode) }}>{arrival.displayRouteCode || arrival.routeCode || "BUS"}</span><div><b>{arrival.headSign || arrival.name || "People’s Bus"}</b><small>{arrival.nextTripArrivalTime || arrival.stopArrivalTime || t.etaPending}</small></div><strong className="eta">{etaLabel(arrival.nextTripArrivalTime || arrival.stopArrivalTime)}</strong></article>) : <div className="empty-state"><span className="empty-icon">B</span><div><b>{t.etaPending}</b><p>{t.etaHint}</p></div></div>}
-        </section>}<p className="disclaimer">{t.disclaimer}</p>
+        </section>}
+        <nav className="social-links" aria-label="Bus Kahan Hai social media">
+          <span>{language === "ur" ? "ہمیں فالو کریں" : "Follow us"}</span>
+          <div>
+            <a href="https://instagram.com/buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on Instagram">Instagram</a>
+            <a href="https://facebook.com/buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on Facebook">Facebook</a>
+            <a href="https://linkedin.com/company/buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on LinkedIn">LinkedIn</a>
+            <a href="https://youtube.com/@buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on YouTube">YouTube</a>
+            <a href="https://tiktok.com/@buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on TikTok">TikTok</a>
+            <a href="https://x.com/buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on X">X</a>
+            <a href="https://threads.net/@buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on Threads">Threads</a>
+            <a href="https://t.me/buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on Telegram">Telegram</a>
+          </div>
+        </nav>
+        <p className="made-for">{t.madeFor}</p><p className="disclaimer">{t.disclaimer}</p>
       </aside>
     </section>
   </main>;

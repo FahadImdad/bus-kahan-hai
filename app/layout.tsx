@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const protocol = incoming.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   const origin = `${protocol}://${host}`;
   const title = "Bus Kahan Hai? | Karachi People’s Bus Tracker";
-  const description = "Karachi People’s Bus routes, stops, arrivals and live vehicle locations in one lightweight mobile tracker.";
+  const description = "Find Karachi People’s Bus routes, stops and available live vehicle locations in one lightweight mobile tracker.";
   return {
     title,
     description,
@@ -22,5 +22,24 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body className={manrope.variable}>{children}</body></html>;
+  const socialProfiles = [
+    "https://instagram.com/buskahanhai",
+    "https://facebook.com/buskahanhai",
+    "https://linkedin.com/company/buskahanhai",
+    "https://youtube.com/@buskahanhai",
+    "https://tiktok.com/@buskahanhai",
+    "https://x.com/buskahanhai",
+    "https://threads.net/@buskahanhai",
+    "https://t.me/buskahanhai",
+  ];
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "Bus Kahan Hai?",
+    url: "https://buskahanhai.com",
+    applicationCategory: "TravelApplication",
+    description: "Find Karachi People’s Bus routes, stops and available live vehicle locations.",
+    sameAs: socialProfiles,
+  };
+  return <html lang="en"><body className={manrope.variable}><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />{children}</body></html>;
 }

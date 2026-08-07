@@ -16,6 +16,7 @@ let fleetRefreshPromise: Promise<RouteResponseEntry[]> | null = null;
 let directoryCache: { expiresAt: number; data: Record<string, unknown> } | null = null;
 let referenceRouteCache: { expiresAt: number; paths: Array<Record<string, unknown>> } | null = null;
 const vehicleMemory = new Map<string, { bus: Record<string, unknown>; lastSeenAt: number }>();
+let supabaseFleetHydrated = false;
 
 const delay = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
@@ -58,7 +59,7 @@ function vehicleKey(bus: Record<string, unknown>) {
 
 async function rememberVehicles(currentBuses: Record<string, unknown>[]) {
   const now = Date.now();
-  if (supabaseFleetEnabled()) {
+  if (supabaseFleetEnabled() && !supabaseFleetHydrated) {
     try {
       const savedFleet = await loadSavedFleet();
       savedFleet.forEach((row) => {
@@ -68,6 +69,7 @@ async function rememberVehicles(currentBuses: Record<string, unknown>[]) {
           lastSeenAt: Number.isFinite(lastSeenAt) ? lastSeenAt : now,
         });
       });
+      supabaseFleetHydrated = true;
     } catch (error) {
       console.error("Unable to load saved Supabase fleet", error);
     }
