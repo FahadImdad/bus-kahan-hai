@@ -29,6 +29,10 @@ button, a, select { -webkit-tap-highlight-color: transparent; }
 .feed-pill i { width: 8px; height: 8px; border-radius: 50%; background: #eea72c; }
 .feed-pill.is-live i { background: var(--red); box-shadow: 0 0 0 5px rgba(255,23,31,.12); }
 .topbar-actions { display: flex; align-items: center; gap: 10px; }
+.install-app { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 0; border-radius: 11px; background: var(--red); color: #fff; font-size: 12px; font-weight: 800; cursor: pointer; box-shadow: 0 6px 16px rgba(255,23,31,.28); transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
+.install-app:hover { background: var(--red-deep); transform: translateY(-1px); box-shadow: 0 8px 20px rgba(255,23,31,.34); }
+.install-app svg { width: 16px; height: 16px; }
+@media (max-width: 560px) { .install-app span { display: none; } .install-app { padding: 0 11px; } }
 .language-toggle { display: flex; padding: 3px; border: 1px solid #b9cada; border-radius: 13px; background: var(--ice); }
 .language-toggle button { min-height: 34px; border: 0; border-radius: 8px; padding: 0 11px; background: transparent; color: #667269; font-size: 10px; font-weight: 800; cursor: pointer; }
 .language-toggle button.active { background: var(--navy); color: white; box-shadow: 0 5px 14px rgba(7,54,101,.24); }
@@ -144,7 +148,20 @@ select:disabled { opacity: .5; cursor: not-allowed; background: #eceee9; }
 .social-links > div { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 12px; }
 .social-links a.social-icon { width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #cbd8e3; border-radius: 50%; background: #f4f8fb; color: var(--navy); text-decoration: none; transition: border-color .18s ease, background .18s ease, color .18s ease, transform .18s ease; }
 .social-links a.social-icon svg { width: 17px; height: 17px; fill: currentColor; }
-.social-links a.social-icon:hover { border-color: var(--red); background: var(--red); color: #fff; transform: translateY(-2px); box-shadow: 0 5px 14px rgba(255,23,31,.28); }
+/* Real brand colours per platform */
+.social-links a.ig { color: #E4405F; }
+.social-links a.fb { color: #1877F2; }
+.social-links a.li { color: #0A66C2; }
+.social-links a.yt { color: #FF0000; }
+.social-links a.tt { color: #010101; }
+.social-links a.xx { color: #000000; }
+.social-links a.social-icon:hover { transform: translateY(-2px); color: #fff; box-shadow: 0 5px 14px rgba(3,31,61,.22); }
+.social-links a.ig:hover { background: linear-gradient(45deg,#F58529,#DD2A7B,#8134AF,#515BD4); border-color: transparent; }
+.social-links a.fb:hover { background: #1877F2; border-color: #1877F2; }
+.social-links a.li:hover { background: #0A66C2; border-color: #0A66C2; }
+.social-links a.yt:hover { background: #FF0000; border-color: #FF0000; }
+.social-links a.tt:hover { background: #010101; border-color: #010101; }
+.social-links a.xx:hover { background: #000000; border-color: #000000; }
 .social-links a.social-icon:focus-visible { outline: 3px solid rgba(255,23,31,.22); outline-offset: 2px; }
 .made-for { color: var(--navy); font-size: 11px; font-weight: 700; margin: 18px 0 0; }
 .made-for + .disclaimer { margin-top: 6px; }
