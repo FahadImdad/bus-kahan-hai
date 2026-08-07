@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { loadSavedFleet, saveLiveFleet, supabaseFleetEnabled } from "../../lib/supabase-fleet";
+import { loadSavedFleet, saveLiveFleet, supabaseFleetEnabled, loadSnapshot, saveSnapshot } from "../../lib/supabase-fleet";
 
 export const runtime = "edge";
 
@@ -201,6 +201,64 @@ function refreshFleet(routeCodes: string[], location?: { lat: string; lng: strin
   return fleetRefreshPromise;
 }
 
+// Compute the full-fleet /api/transit payload (all routes, no stop/route filter)
+// and persist it as the shared snapshot. Called in the background when the
+// snapshot goes stale, so visitors never pay for this work.
+async function buildAndSaveSnapshot(location: { lat: string; lng: string; lang?: string }) {
+  const directory = await routeDirectory(location);
+  const roadAlignedRoutePaths = await referenceRoutePaths().catch(() => []);
+  const uniqueStops = Array.from(
+    new Map((directory.stopList ?? []).map((stop: Record<string, unknown>) => [String(stop.stopId), stop])).values(),
+  );
+  const routeCodes = (directory.routeList ?? [])
+    .map((route: Record<string, unknown>) => String(route.displayRouteCode ?? route.routeCode ?? ""))
+    .filter(Boolean);
+  const routeResponses = await refreshFleet(routeCodes, location);
+  const routePaths = routeResponses.flatMap(({ response }) => response.pathList ?? []);
+  const routeBuses = Array.from(new Map(routeResponses.flatMap(({ routeCode, response }) =>
+    (response.pathList ?? []).flatMap((path: Record<string, unknown>) =>
+      (Array.isArray(path.busList) ? path.busList : []).map((bus: Record<string, unknown>) => ({
+        ...bus, routeCode, displayRouteCode: routeCode, plate: bus.plateNumber,
+      })),
+    ),
+  ).map((bus: Record<string, unknown>) => [vehicleKey(bus) || `${bus.routeCode}-${bus.lat}-${bus.lng}`, bus])).values());
+  const rememberedBuses = await rememberVehicles(routeBuses);
+
+  const payload = {
+    ok: true,
+    checkedAt: new Date().toISOString(),
+    selectedStopId: String((uniqueStops[0] as Record<string, unknown> | undefined)?.stopId ?? ""),
+    stops: uniqueStops,
+    routes: directory.routeList ?? [],
+    stopInfo: null,
+    buses: rememberedBuses,
+    fleetStatus: {
+      live: rememberedBuses.filter((bus) => bus.trackingStatus === "live").length,
+      recentlySeen: rememberedBuses.filter((bus) => bus.trackingStatus === "recently_seen").length,
+      retentionMode: "supabase_until_live_again",
+    },
+    arrivals: [],
+    routePaths,
+    referenceRoutePaths: roadAlignedRoutePaths,
+    coverage: {
+      requestedRouteDirections: routeResponses.length,
+      freshRouteDirections: routeResponses.filter((entry) => entry.source === "live").length,
+      retainedRouteDirections: routeResponses.filter((entry) => entry.source === "retained").length,
+      unavailableRouteDirections: routeResponses.filter((entry) => entry.source === "empty").length,
+    },
+  };
+  await saveSnapshot(payload as unknown as Record<string, unknown>);
+  return payload;
+}
+
+// How long a saved snapshot is considered fresh. While fresh, every visitor is
+// served the cached snapshot with ZERO upstream calls. Once stale, the next
+// visitor triggers one background refresh (guarded by an in-flight lock) and is
+// still served the previous snapshot instantly — so no user ever waits for the
+// full sweep, and upstream is hit at most once per window no matter the traffic.
+const SNAPSHOT_TTL_MS = 20_000;
+let snapshotRefreshInFlight = false;
+
 export async function GET(request: NextRequest) {
   try {
     const requestedLat = Number(request.nextUrl.searchParams.get("lat"));
@@ -211,6 +269,28 @@ export async function GET(request: NextRequest) {
       lng: Number.isFinite(requestedLng) ? String(requestedLng) : "66.990501",
       lang: requestedLanguage,
     };
+
+    const wantsFullFleet = !request.nextUrl.searchParams.get("route") && !request.nextUrl.searchParams.get("stopId");
+    const forceRefresh = request.nextUrl.searchParams.get("refresh") === "1";
+
+    // Fast path: the default full-fleet view is served from the shared Supabase
+    // snapshot. This is what scales to all of Karachi for free.
+    if (wantsFullFleet && supabaseFleetEnabled() && !forceRefresh) {
+      const snapshot = await loadSnapshot().catch(() => null);
+      if (snapshot) {
+        const age = Date.now() - snapshot.savedAt;
+        // If stale, kick off ONE background refresh but still serve instantly.
+        if (age > SNAPSHOT_TTL_MS && !snapshotRefreshInFlight) {
+          snapshotRefreshInFlight = true;
+          void buildAndSaveSnapshot(location).finally(() => { snapshotRefreshInFlight = false; });
+        }
+        return NextResponse.json(
+          { ...snapshot.payload, servedFrom: "snapshot", snapshotAgeSeconds: Math.round(age / 1000) },
+          { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } },
+        );
+      }
+    }
+
     const directory = await routeDirectory(location);
     const roadAlignedRoutePaths = await referenceRoutePaths().catch(() => []);
     const uniqueStops = Array.from(
@@ -256,32 +336,37 @@ export async function GET(request: NextRequest) {
     ).values());
     const rememberedBuses = await rememberVehicles(currentBuses);
 
-    return NextResponse.json(
-      {
-        ok: live.result?.code === 0,
-        checkedAt: new Date().toISOString(),
-        selectedStopId: stopId,
-        stops: uniqueStops,
-        routes: directory.routeList ?? [],
-        stopInfo: live.stopInfo ?? null,
-        buses: rememberedBuses,
-        fleetStatus: {
-          live: rememberedBuses.filter((bus) => bus.trackingStatus === "live").length,
-          recentlySeen: rememberedBuses.filter((bus) => bus.trackingStatus === "recently_seen").length,
-          retentionMode: supabaseFleetEnabled() ? "supabase_until_live_again" : "server_memory_until_live_again",
-        },
-        arrivals: live.routeList ?? [],
-        routePaths,
-        referenceRoutePaths: roadAlignedRoutePaths,
-        coverage: {
-          requestedRouteDirections: routeResponses.length,
-          freshRouteDirections: routeResponses.filter((entry) => entry.source === "live").length,
-          retainedRouteDirections: routeResponses.filter((entry) => entry.source === "retained").length,
-          unavailableRouteDirections: routeResponses.filter((entry) => entry.source === "empty").length,
-        },
+    const responsePayload = {
+      ok: live.result?.code === 0,
+      checkedAt: new Date().toISOString(),
+      selectedStopId: stopId,
+      stops: uniqueStops,
+      routes: directory.routeList ?? [],
+      stopInfo: live.stopInfo ?? null,
+      buses: rememberedBuses,
+      fleetStatus: {
+        live: rememberedBuses.filter((bus) => bus.trackingStatus === "live").length,
+        recentlySeen: rememberedBuses.filter((bus) => bus.trackingStatus === "recently_seen").length,
+        retentionMode: supabaseFleetEnabled() ? "supabase_until_live_again" : "server_memory_until_live_again",
       },
-      { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } },
-    );
+      arrivals: live.routeList ?? [],
+      routePaths,
+      referenceRoutePaths: roadAlignedRoutePaths,
+      coverage: {
+        requestedRouteDirections: routeResponses.length,
+        freshRouteDirections: routeResponses.filter((entry) => entry.source === "live").length,
+        retainedRouteDirections: routeResponses.filter((entry) => entry.source === "retained").length,
+        unavailableRouteDirections: routeResponses.filter((entry) => entry.source === "empty").length,
+      },
+    };
+
+    // Seed/refresh the shared snapshot from a full-fleet computation so the next
+    // visitors are served instantly from Supabase instead of re-sweeping.
+    if (wantsFullFleet && supabaseFleetEnabled()) {
+      void saveSnapshot(responsePayload as unknown as Record<string, unknown>).catch(() => {});
+    }
+
+    return NextResponse.json(responsePayload, { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } });
   } catch (error) {
     return NextResponse.json(
       { ok: false, message: "Live service is temporarily unavailable", detail: error instanceof Error ? error.message : "Unknown error" },
