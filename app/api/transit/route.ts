@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { loadSavedFleet, saveLiveFleet, supabaseFleetEnabled } from "../../lib/supabase-fleet";
 
 export const runtime = "edge";
 
@@ -55,12 +56,39 @@ function vehicleKey(bus: Record<string, unknown>) {
   return stableId ? String(stableId) : "";
 }
 
-function rememberVehicles(currentBuses: Record<string, unknown>[]) {
+async function rememberVehicles(currentBuses: Record<string, unknown>[]) {
   const now = Date.now();
+  if (supabaseFleetEnabled()) {
+    try {
+      const savedFleet = await loadSavedFleet();
+      savedFleet.forEach((row) => {
+        const lastSeenAt = Date.parse(row.last_seen_at);
+        vehicleMemory.set(row.vehicle_key, {
+          bus: row.bus_data,
+          lastSeenAt: Number.isFinite(lastSeenAt) ? lastSeenAt : now,
+        });
+      });
+    } catch (error) {
+      console.error("Unable to load saved Supabase fleet", error);
+    }
+  }
+
+  const liveFleet: Array<{ vehicleKey: string; bus: Record<string, unknown> }> = [];
   currentBuses.forEach((bus) => {
     const key = vehicleKey(bus);
-    if (key) vehicleMemory.set(key, { bus, lastSeenAt: now });
+    if (key) {
+      vehicleMemory.set(key, { bus, lastSeenAt: now });
+      liveFleet.push({ vehicleKey: key, bus });
+    }
   });
+
+  if (supabaseFleetEnabled()) {
+    try {
+      await saveLiveFleet(liveFleet);
+    } catch (error) {
+      console.error("Unable to save live fleet to Supabase", error);
+    }
+  }
 
   const fleet: Record<string, unknown>[] = [];
   vehicleMemory.forEach((entry, key) => {
@@ -224,7 +252,7 @@ export async function GET(request: NextRequest) {
     const currentBuses = Array.from(new Map(
       [...routeBuses, ...closestBuses].map((bus) => [vehicleKey(bus) || `${bus.routeCode}-${bus.lat}-${bus.lng}`, bus]),
     ).values());
-    const rememberedBuses = rememberVehicles(currentBuses);
+    const rememberedBuses = await rememberVehicles(currentBuses);
 
     return NextResponse.json(
       {
@@ -238,7 +266,7 @@ export async function GET(request: NextRequest) {
         fleetStatus: {
           live: rememberedBuses.filter((bus) => bus.trackingStatus === "live").length,
           recentlySeen: rememberedBuses.filter((bus) => bus.trackingStatus === "recently_seen").length,
-          retentionMode: "until_live_again",
+          retentionMode: supabaseFleetEnabled() ? "supabase_until_live_again" : "server_memory_until_live_again",
         },
         arrivals: live.routeList ?? [],
         routePaths,
