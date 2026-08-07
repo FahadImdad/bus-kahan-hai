@@ -466,14 +466,14 @@ export function BusTracker() {
         <nav className="social-links" aria-label="Bus Kahan Hai social media">
           <span>{language === "ur" ? "ہمیں فالو کریں" : "Follow us"}</span>
           <div>
-            <a href="https://instagram.com/buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on Instagram">Instagram</a>
-            <a href="https://facebook.com/buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on Facebook">Facebook</a>
-            <a href="https://linkedin.com/company/buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on LinkedIn">LinkedIn</a>
-            <a href="https://youtube.com/@buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on YouTube">YouTube</a>
-            <a href="https://tiktok.com/@buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on TikTok">TikTok</a>
-            <a href="https://x.com/buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on X">X</a>
-            <a href="https://threads.net/@buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on Threads">Threads</a>
-            <a href="https://t.me/buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on Telegram">Telegram</a>
+            <a className="social-icon" href="https://instagram.com/buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none" /></svg></a>
+            <a className="social-icon" href="https://facebook.com/buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on Facebook"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h-2.5A3.5 3.5 0 0 0 9 6.5V9H7v3h2v9h3v-9h2.5l.5-3H12V6.5a1 1 0 0 1 1-1h2Z" fill="currentColor" stroke="none" /></svg></a>
+            <a className="social-icon" href="https://linkedin.com/company/buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on LinkedIn"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="4" /><path d="M7 10v7M7 7v.01M11 17v-4a2 2 0 0 1 4 0v4M11 10v7" /></svg></a>
+            <a className="social-icon" href="https://youtube.com/@buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on YouTube"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="4" /><path d="M10 9l5 3-5 3Z" fill="currentColor" stroke="none" /></svg></a>
+            <a className="social-icon" href="https://tiktok.com/@buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on TikTok"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3v10.5a3.5 3.5 0 1 1-3.5-3.5c.4 0 .8.06 1.1.18M14 3a5 5 0 0 0 5 5" /></svg></a>
+            <a className="social-icon" href="https://x.com/buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on X"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16M20 4L4 20" /></svg></a>
+            <a className="social-icon" href="https://threads.net/@buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on Threads"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21c-5 0-8-3.5-8-9s3-9 8-9c4 0 6.5 2.4 7 5.5M8.5 13.5c0-2 1.6-3.5 3.7-3.5 2.4 0 3.8 1.6 3.8 4.2 0 2.4-1.4 3.8-3.3 3.8-1.5 0-2.4-.9-2.4-2 0-1.2 1-1.9 2.6-1.9 2.8 0 4.5 1.6 4.5 4" /></svg></a>
+            <a className="social-icon" href="https://t.me/buskahanhai" target="_blank" rel="noopener noreferrer" aria-label="Bus Kahan Hai on Telegram"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 5L3 12l5 2 2 5 3-3 4 3Z" /><path d="M8 14l8-6" /></svg></a>
           </div>
         </nav>
         <p className="made-for">{t.madeFor}</p><p className="disclaimer">{t.disclaimer}</p>

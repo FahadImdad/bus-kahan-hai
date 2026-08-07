@@ -141,10 +141,11 @@ select:disabled { opacity: .5; cursor: not-allowed; background: #eceee9; }
 .disclaimer { color: #8a918b; font-size: 8px; line-height: 1.5; margin: 24px 0 0; }
 .social-links { margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--line); }
 .social-links > span { display: block; color: var(--navy); font-size: 10px; font-weight: 900; letter-spacing: .45px; text-transform: uppercase; }
-.social-links > div { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
-.social-links a { min-height: 31px; display: inline-flex; align-items: center; border: 1px solid #cbd8e3; border-radius: 999px; padding: 0 11px; background: #f4f8fb; color: var(--navy); font-size: 9px; font-weight: 800; text-decoration: none; transition: border-color .18s ease, background .18s ease, transform .18s ease; }
-.social-links a:hover { border-color: var(--red); background: #fff1f1; transform: translateY(-1px); }
-.social-links a:focus-visible { outline: 3px solid rgba(255,23,31,.22); outline-offset: 2px; }
+.social-links > div { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 12px; }
+.social-links a.social-icon { width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #cbd8e3; border-radius: 50%; background: #f4f8fb; color: var(--navy); text-decoration: none; transition: border-color .18s ease, background .18s ease, color .18s ease, transform .18s ease; }
+.social-links a.social-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.social-links a.social-icon:hover { border-color: var(--red); background: var(--red); color: #fff; transform: translateY(-2px); box-shadow: 0 5px 14px rgba(255,23,31,.28); }
+.social-links a.social-icon:focus-visible { outline: 3px solid rgba(255,23,31,.22); outline-offset: 2px; }
 .made-for { color: var(--navy); font-size: 11px; font-weight: 700; margin: 18px 0 0; }
 .made-for + .disclaimer { margin-top: 6px; }
 .stop-marker { width: 18px; height: 18px; border-radius: 50%; background: white; border: 5px solid var(--green); box-shadow: 0 0 0 5px rgba(11,122,75,.18); }
