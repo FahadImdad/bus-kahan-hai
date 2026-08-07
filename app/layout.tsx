@@ -1,7 +1,14 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
+
+export const viewport: Viewport = {
+  themeColor: "#073665",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
 
 const manrope = Manrope({ variable: "--font-manrope", subsets: ["latin"] });
 
@@ -15,13 +22,17 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title,
     description,
+    applicationName: "Bus Kahan Hai?",
+    manifest: "/manifest.webmanifest",
+    appleWebApp: { capable: true, title: "Bus Kahan Hai?", statusBarStyle: "default" },
     icons: {
       icon: [
         { url: "/favicon.png", type: "image/png" },
-        { url: "/brand/app-icon.png", type: "image/png", sizes: "1254x1254" },
+        { url: "/brand/icon-192.png", type: "image/png", sizes: "192x192" },
+        { url: "/brand/icon-512.png", type: "image/png", sizes: "512x512" },
       ],
       shortcut: "/favicon.png",
-      apple: "/brand/app-icon.png",
+      apple: [{ url: "/brand/icon-192.png", sizes: "192x192" }],
     },
     openGraph: { title, description, type: "website", images: [{ url: `${origin}/og.png`, width: 1200, height: 630, alt: "Bus Kahan Hai, Karachi People’s Bus tracker" }] },
     twitter: { card: "summary_large_image", title, description, images: [`${origin}/og.png`] },
