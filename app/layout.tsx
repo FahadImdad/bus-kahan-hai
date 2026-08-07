@@ -34,7 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
       shortcut: "/favicon.png",
       apple: [{ url: "/brand/icon-192.png", sizes: "192x192" }],
     },
-    openGraph: { title, description, type: "website", images: [{ url: `${origin}/og.png`, width: 1200, height: 630, alt: "Bus Kahan Hai, Karachi People’s Bus tracker" }] },
+    openGraph: { title, description, type: "website", siteName: "Bus Kahan Hai?", url: origin, locale: "en_PK", images: [{ url: `${origin}/og.png`, width: 1200, height: 630, type: "image/png", alt: "People’s Bus Karachi Live Tracking — buskahanhai.com" }] },
     twitter: { card: "summary_large_image", title, description, images: [`${origin}/og.png`] },
   };
 }
