@@ -143,7 +143,7 @@ select:disabled { opacity: .5; cursor: not-allowed; background: #eceee9; }
 .social-links > span { display: block; color: var(--navy); font-size: 10px; font-weight: 900; letter-spacing: .45px; text-transform: uppercase; }
 .social-links > div { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 12px; }
 .social-links a.social-icon { width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #cbd8e3; border-radius: 50%; background: #f4f8fb; color: var(--navy); text-decoration: none; transition: border-color .18s ease, background .18s ease, color .18s ease, transform .18s ease; }
-.social-links a.social-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.social-links a.social-icon svg { width: 17px; height: 17px; fill: currentColor; }
 .social-links a.social-icon:hover { border-color: var(--red); background: var(--red); color: #fff; transform: translateY(-2px); box-shadow: 0 5px 14px rgba(255,23,31,.28); }
 .social-links a.social-icon:focus-visible { outline: 3px solid rgba(255,23,31,.22); outline-offset: 2px; }
 .made-for { color: var(--navy); font-size: 11px; font-weight: 700; margin: 18px 0 0; }
