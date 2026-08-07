@@ -3,8 +3,11 @@ import { loadSavedFleet, saveLiveFleet, supabaseFleetEnabled, loadSnapshot, save
 
 export const runtime = "edge";
 
-const BASE_URL = "https://mobile.peoplebusservice.com/rl1/";
-const REFERENCE_KML_URL = "https://www.google.com/maps/d/kml?mid=15gf9WXMKT4x8Rna53Q7yEs2YEGS2-7s&forcekml=1";
+// Upstream source is read from server-only env vars so it never appears in the
+// repo or in anything the browser can see. Fallbacks keep local dev working.
+const BASE_URL = (process.env.TRANSIT_UPSTREAM_URL || "https://mobile.peoplebusservice.com/rl1/").replace(/\/?$/, "/");
+const UPSTREAM_VERSION = process.env.TRANSIT_UPSTREAM_VERSION || "Android_1.4.4(34)_15_web_com.kentkart.smtaapp";
+const REFERENCE_KML_URL = process.env.TRANSIT_REFERENCE_KML_URL || "https://www.google.com/maps/d/kml?mid=15gf9WXMKT4x8Rna53Q7yEs2YEGS2-7s&forcekml=1";
 type RouteResponseEntry = {
   routeCode: string;
   direction: string;
@@ -96,9 +99,21 @@ async function rememberVehicles(currentBuses: Record<string, unknown>[]) {
   vehicleMemory.forEach((entry, key) => {
     const ageMs = now - entry.lastSeenAt;
     const isLive = currentBuses.some((bus) => vehicleKey(bus) === key);
+    const bus = entry.bus;
+    // Only expose the fields the UI needs, with neutral names. This strips every
+    // upstream-specific field (busId, tripId, busLabel, pickMeUp, couple, etc.)
+    // so the response reveals nothing about where the data originates.
     fleet.push({
-      ...entry.bus,
       vehicleKey: key,
+      plate: bus.plate ?? bus.plateNumber ?? null,
+      lat: bus.lat ?? bus.latitude ?? null,
+      lng: bus.lng ?? bus.longitude ?? null,
+      bearing: bus.bearing ?? null,
+      routeCode: bus.routeCode ?? null,
+      displayRouteCode: bus.displayRouteCode ?? bus.routeCode ?? null,
+      ac: bus.ac ?? null,
+      bike: bus.bike ?? null,
+      wheelchair: bus.disabledPerson ?? null,
       trackingStatus: isLive ? "live" : "recently_seen",
       lastSeenAt: new Date(entry.lastSeenAt).toISOString(),
       locationAgeSeconds: Math.round(ageMs / 1000),
@@ -110,7 +125,7 @@ async function rememberVehicles(currentBuses: Record<string, unknown>[]) {
 function passengerParams(lat = "24.860966", lng = "66.990501", language = "en") {
   return new URLSearchParams({
     region: "123",
-    version: "Android_1.4.4(34)_15_web_com.kentkart.smtaapp",
+    version: UPSTREAM_VERSION,
     authType: "4",
     accuracy: "0",
     lat,
