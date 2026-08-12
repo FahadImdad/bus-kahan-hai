@@ -269,8 +269,8 @@ function ageLabel(seconds: number, language: Language) {
   const minutes = Math.floor(seconds / 60);
   return language === "ur" ? `${minutes} منٹ پہلے` : `${minutes}m ago`;
 }
-function canonicalRouteCode(value = "") {
-  const normalized = value.toUpperCase();
+function canonicalRouteCode(value: string | null | undefined = "") {
+  const normalized = String(value ?? "").trim().toUpperCase();
   const electric = normalized.match(/^EV-?0*(\d+)$/);
   if (electric) return `EV-${Number(electric[1])}`;
   const pink = normalized.match(/^PINK(-?)(\d+)$/);
