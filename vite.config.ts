@@ -54,9 +54,16 @@ export default defineConfig(async () => {
   const { cloudflare } = await import("@cloudflare/vite-plugin");
 
   return {
-    server: isCodexSeatbeltSandbox
-      ? { watch: { useFsEvents: false, usePolling: true } }
-      : undefined,
+    // The embedded preview can occasionally reject a Vite hot-update message.
+    // Keep reloads working, but do not cover the healthy application with the
+    // development-only error overlay when that transport hiccup occurs.
+    server: {
+      hmr: { overlay: false },
+      forwardConsole: false,
+      ...(isCodexSeatbeltSandbox
+        ? { watch: { useFsEvents: false, usePolling: true } }
+        : {}),
+    },
     plugins: [
       vinext(),
       sites(),

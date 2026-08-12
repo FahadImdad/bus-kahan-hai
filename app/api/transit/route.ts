@@ -1,62 +1,116 @@
 import { NextRequest, NextResponse } from "next/server";
-import { loadSavedFleet, saveLiveFleet, supabaseFleetEnabled, loadSnapshot, saveSnapshot } from "../../lib/supabase-fleet";
+import {
+  loadSavedFleet,
+  saveLiveFleet,
+  supabaseFleetEnabled,
+  loadSnapshot,
+  saveSnapshot,
+} from "../../lib/supabase-fleet";
 
 export const runtime = "edge";
 
 // Upstream source is read from server-only env vars so it never appears in the
 // repo or in anything the browser can see. Fallbacks keep local dev working.
-const BASE_URL = (process.env.TRANSIT_UPSTREAM_URL || "https://mobile.peoplebusservice.com/rl1/").replace(/\/?$/, "/");
-const UPSTREAM_VERSION = process.env.TRANSIT_UPSTREAM_VERSION || "Android_1.4.4(34)_15_web_com.kentkart.smtaapp";
-const REFERENCE_KML_URL = process.env.TRANSIT_REFERENCE_KML_URL || "https://www.google.com/maps/d/kml?mid=15gf9WXMKT4x8Rna53Q7yEs2YEGS2-7s&forcekml=1";
+const BASE_URL = (
+  process.env.TRANSIT_UPSTREAM_URL || "https://mobile.peoplebusservice.com/rl1/"
+).replace(/\/?$/, "/");
+const UPSTREAM_VERSION =
+  process.env.TRANSIT_UPSTREAM_VERSION ||
+  "Android_1.4.4(34)_15_web_com.kentkart.smtaapp";
+const REFERENCE_KML_URL =
+  process.env.TRANSIT_REFERENCE_KML_URL ||
+  "https://www.google.com/maps/d/kml?mid=15gf9WXMKT4x8Rna53Q7yEs2YEGS2-7s&forcekml=1";
 type RouteResponseEntry = {
   routeCode: string;
   direction: string;
   response: { pathList?: Array<Record<string, unknown>> };
   source: "live" | "retained" | "empty";
 };
-let fleetCache: { expiresAt: number; entries: RouteResponseEntry[] } | null = null;
+let fleetCache: { expiresAt: number; entries: RouteResponseEntry[] } | null =
+  null;
 let fleetRefreshPromise: Promise<RouteResponseEntry[]> | null = null;
-let directoryCache: { expiresAt: number; data: Record<string, unknown> } | null = null;
-let referenceRouteCache: { expiresAt: number; paths: Array<Record<string, unknown>> } | null = null;
-const vehicleMemory = new Map<string, { bus: Record<string, unknown>; lastSeenAt: number }>();
+let directoryCache: {
+  expiresAt: number;
+  data: Record<string, unknown>;
+} | null = null;
+let referenceRouteCache: {
+  expiresAt: number;
+  paths: Array<Record<string, unknown>>;
+} | null = null;
+const vehicleMemory = new Map<
+  string,
+  { bus: Record<string, unknown>; lastSeenAt: number }
+>();
 let supabaseFleetHydrated = false;
 
-const delay = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+const delay = (milliseconds: number) =>
+  new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 function decodeXml(value: string) {
-  return value.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+  return value
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
 }
 
 async function referenceRoutePaths() {
-  if (referenceRouteCache && referenceRouteCache.expiresAt > Date.now()) return referenceRouteCache.paths;
+  if (referenceRouteCache && referenceRouteCache.expiresAt > Date.now())
+    return referenceRouteCache.paths;
   const response = await fetch(REFERENCE_KML_URL, {
-    headers: { Accept: "application/vnd.google-earth.kml+xml, application/xml" },
+    headers: {
+      Accept: "application/vnd.google-earth.kml+xml, application/xml",
+    },
     cf: { cacheTtl: 86_400, cacheEverything: true },
   } as RequestInit & { cf: { cacheTtl: number; cacheEverything: boolean } });
-  if (!response.ok) throw new Error(`Reference route map returned ${response.status}`);
+  if (!response.ok)
+    throw new Error(`Reference route map returned ${response.status}`);
   const kml = await response.text();
-  const paths = Array.from(kml.matchAll(/<Placemark>([\s\S]*?)<\/Placemark>/g)).flatMap((match) => {
+  const paths = Array.from(
+    kml.matchAll(/<Placemark>([\s\S]*?)<\/Placemark>/g),
+  ).flatMap((match) => {
     const block = match[1];
-    const name = decodeXml(block.match(/<name>([\s\S]*?)<\/name>/)?.[1]?.trim() ?? "");
+    const name = decodeXml(
+      block.match(/<name>([\s\S]*?)<\/name>/)?.[1]?.trim() ?? "",
+    );
     const routeMatch = name.match(/^(R\d+|EV-?\d+)/i);
-    const coordinates = block.match(/<coordinates>([\s\S]*?)<\/coordinates>/)?.[1]?.trim() ?? "";
+    const coordinates =
+      block.match(/<coordinates>([\s\S]*?)<\/coordinates>/)?.[1]?.trim() ?? "";
     if (!routeMatch || !coordinates) return [];
-    const displayRouteCode = routeMatch[1].toUpperCase().replace(/^EV-?/, "EV-");
+    const displayRouteCode = routeMatch[1]
+      .toUpperCase()
+      .replace(/^EV-?/, "EV-");
     const pointList = coordinates.split(/\s+/).flatMap((coordinate) => {
       const [lng, lat] = coordinate.split(",").map(Number);
       return Number.isFinite(lat) && Number.isFinite(lng) ? [{ lat, lng }] : [];
     });
-    return pointList.length > 1 ? [
-      { displayRouteCode, direction: "0", direction_name: "A to B", headSign: name, pointList },
-      { displayRouteCode, direction: "1", direction_name: "B to A", headSign: name, pointList: [...pointList].reverse() },
-    ] : [];
+    return pointList.length > 1
+      ? [
+          {
+            displayRouteCode,
+            direction: "0",
+            direction_name: "A to B",
+            headSign: name,
+            pointList,
+          },
+          {
+            displayRouteCode,
+            direction: "1",
+            direction_name: "B to A",
+            headSign: name,
+            pointList: [...pointList].reverse(),
+          },
+        ]
+      : [];
   });
   referenceRouteCache = { expiresAt: Date.now() + 86_400_000, paths };
   return paths;
 }
 
 function vehicleKey(bus: Record<string, unknown>) {
-  const stableId = bus.busId ?? bus.vehicleId ?? bus.deviceId ?? bus.plateNumber ?? bus.plate;
+  const stableId =
+    bus.busId ?? bus.vehicleId ?? bus.deviceId ?? bus.plateNumber ?? bus.plate;
   return stableId ? String(stableId) : "";
 }
 
@@ -78,7 +132,8 @@ async function rememberVehicles(currentBuses: Record<string, unknown>[]) {
     }
   }
 
-  const liveFleet: Array<{ vehicleKey: string; bus: Record<string, unknown> }> = [];
+  const liveFleet: Array<{ vehicleKey: string; bus: Record<string, unknown> }> =
+    [];
   currentBuses.forEach((bus) => {
     const key = vehicleKey(bus);
     if (key) {
@@ -122,7 +177,11 @@ async function rememberVehicles(currentBuses: Record<string, unknown>[]) {
   return fleet;
 }
 
-function passengerParams(lat = "24.860966", lng = "66.990501", language = "en") {
+function passengerParams(
+  lat = "24.860966",
+  lng = "66.990501",
+  language = "en",
+) {
   return new URLSearchParams({
     region: "123",
     version: UPSTREAM_VERSION,
@@ -134,14 +193,19 @@ function passengerParams(lat = "24.860966", lng = "66.990501", language = "en") 
   });
 }
 
-async function passengerFetch(path: string, extra?: Record<string, string>, location?: { lat: string; lng: string; lang?: string }) {
+async function passengerFetch(
+  path: string,
+  extra?: Record<string, string>,
+  location?: { lat: string; lng: string; lang?: string },
+) {
   const params = passengerParams(location?.lat, location?.lng, location?.lang);
   Object.entries(extra ?? {}).forEach(([key, value]) => params.set(key, value));
   const response = await fetch(`${BASE_URL}${path}?${params.toString()}`, {
     headers: { Accept: "application/json" },
     cf: { cacheTtl: 20, cacheEverything: true },
   } as RequestInit & { cf: { cacheTtl: number; cacheEverything: boolean } });
-  if (!response.ok) throw new Error(`Passenger service returned ${response.status}`);
+  if (!response.ok)
+    throw new Error(`Passenger service returned ${response.status}`);
   return response.json();
 }
 
@@ -153,13 +217,17 @@ async function routeInfoWithRetry(
   let lastError: unknown;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      return await passengerFetch("api/v2.0/route/info", {
-        displayRouteCode: routeCode,
-        direction,
-        resultType: "111111",
-        shapeId: "",
-        busStopId: "",
-      }, location);
+      return await passengerFetch(
+        "api/v2.0/route/info",
+        {
+          displayRouteCode: routeCode,
+          direction,
+          resultType: "111111",
+          shapeId: "",
+          busStopId: "",
+        },
+        location,
+      );
     } catch (error) {
       lastError = error;
       if (attempt < 1) await delay(200);
@@ -173,29 +241,63 @@ async function routeInfoEntries(
   location?: { lat: string; lng: string; lang?: string },
   retainedEntries: RouteResponseEntry[] = [],
 ) {
-  const tasks = routeCodes.flatMap((routeCode) => ["0", "1"].map((direction) => ({ routeCode, direction })));
-  const retained = new Map(retainedEntries.map((entry) => [`${entry.routeCode}:${entry.direction}`, entry]));
+  const tasks = routeCodes.flatMap((routeCode) =>
+    ["0", "1"].map((direction) => ({ routeCode, direction })),
+  );
+  const retained = new Map(
+    retainedEntries.map((entry) => [
+      `${entry.routeCode}:${entry.direction}`,
+      entry,
+    ]),
+  );
   const entries: RouteResponseEntry[] = [];
   for (let index = 0; index < tasks.length; index += 8) {
     const batch = tasks.slice(index, index + 8);
-    entries.push(...await Promise.all(batch.map(async ({ routeCode, direction }) => {
-      try {
-        return { routeCode, direction, response: await routeInfoWithRetry(routeCode, direction, location), source: "live" as const };
-      } catch {
-        const previous = retained.get(`${routeCode}:${direction}`);
-        return previous
-          ? { ...previous, source: "retained" as const }
-          : { routeCode, direction, response: { pathList: [] }, source: "empty" as const };
-      }
-    })));
+    entries.push(
+      ...(await Promise.all(
+        batch.map(async ({ routeCode, direction }) => {
+          try {
+            return {
+              routeCode,
+              direction,
+              response: await routeInfoWithRetry(
+                routeCode,
+                direction,
+                location,
+              ),
+              source: "live" as const,
+            };
+          } catch {
+            const previous = retained.get(`${routeCode}:${direction}`);
+            return previous
+              ? { ...previous, source: "retained" as const }
+              : {
+                  routeCode,
+                  direction,
+                  response: { pathList: [] },
+                  source: "empty" as const,
+                };
+          }
+        }),
+      )),
+    );
   }
   return entries;
 }
 
-async function routeDirectory(location?: { lat: string; lng: string; lang?: string }) {
-  if (directoryCache && directoryCache.expiresAt > Date.now()) return directoryCache.data;
+async function routeDirectory(location?: {
+  lat: string;
+  lng: string;
+  lang?: string;
+}) {
+  if (directoryCache && directoryCache.expiresAt > Date.now())
+    return directoryCache.data;
   try {
-    const data = await passengerFetch("api/v2.0/route/list", undefined, location) as Record<string, unknown>;
+    const data = (await passengerFetch(
+      "api/v2.0/route/list",
+      undefined,
+      location,
+    )) as Record<string, unknown>;
     directoryCache = { expiresAt: Date.now() + 5 * 60_000, data };
     return data;
   } catch (error) {
@@ -204,14 +306,23 @@ async function routeDirectory(location?: { lat: string; lng: string; lang?: stri
   }
 }
 
-function refreshFleet(routeCodes: string[], location?: { lat: string; lng: string; lang?: string }) {
+function refreshFleet(
+  routeCodes: string[],
+  location?: { lat: string; lng: string; lang?: string },
+) {
   if (!fleetRefreshPromise) {
-    fleetRefreshPromise = routeInfoEntries(routeCodes, location, fleetCache?.entries ?? [])
+    fleetRefreshPromise = routeInfoEntries(
+      routeCodes,
+      location,
+      fleetCache?.entries ?? [],
+    )
       .then((entries) => {
         fleetCache = { expiresAt: Date.now() + 30_000, entries };
         return entries;
       })
-      .finally(() => { fleetRefreshPromise = null; });
+      .finally(() => {
+        fleetRefreshPromise = null;
+      });
   }
   return fleetRefreshPromise;
 }
@@ -219,37 +330,69 @@ function refreshFleet(routeCodes: string[], location?: { lat: string; lng: strin
 // Compute the full-fleet /api/transit payload (all routes, no stop/route filter)
 // and persist it as the shared snapshot. Called in the background when the
 // snapshot goes stale, so visitors never pay for this work.
-async function buildAndSaveSnapshot(location: { lat: string; lng: string; lang?: string }) {
+async function buildAndSaveSnapshot(location: {
+  lat: string;
+  lng: string;
+  lang?: string;
+}) {
   const directory = await routeDirectory(location);
   const roadAlignedRoutePaths = await referenceRoutePaths().catch(() => []);
   const uniqueStops = Array.from(
-    new Map((directory.stopList ?? []).map((stop: Record<string, unknown>) => [String(stop.stopId), stop])).values(),
+    new Map(
+      (directory.stopList ?? []).map((stop: Record<string, unknown>) => [
+        String(stop.stopId),
+        stop,
+      ]),
+    ).values(),
   );
   const routeCodes = (directory.routeList ?? [])
-    .map((route: Record<string, unknown>) => String(route.displayRouteCode ?? route.routeCode ?? ""))
+    .map((route: Record<string, unknown>) =>
+      String(route.displayRouteCode ?? route.routeCode ?? ""),
+    )
     .filter(Boolean);
   const routeResponses = await refreshFleet(routeCodes, location);
-  const routePaths = routeResponses.flatMap(({ response }) => response.pathList ?? []);
-  const routeBuses = Array.from(new Map(routeResponses.flatMap(({ routeCode, response }) =>
-    (response.pathList ?? []).flatMap((path: Record<string, unknown>) =>
-      (Array.isArray(path.busList) ? path.busList : []).map((bus: Record<string, unknown>) => ({
-        ...bus, routeCode, displayRouteCode: routeCode, plate: bus.plateNumber,
-      })),
-    ),
-  ).map((bus: Record<string, unknown>) => [vehicleKey(bus) || `${bus.routeCode}-${bus.lat}-${bus.lng}`, bus])).values());
+  const routePaths = routeResponses.flatMap(
+    ({ response }) => response.pathList ?? [],
+  );
+  const routeBuses = Array.from(
+    new Map(
+      routeResponses
+        .flatMap(({ routeCode, response }) =>
+          (response.pathList ?? []).flatMap((path: Record<string, unknown>) =>
+            (Array.isArray(path.busList) ? path.busList : []).map(
+              (bus: Record<string, unknown>) => ({
+                ...bus,
+                routeCode,
+                displayRouteCode: routeCode,
+                plate: bus.plateNumber,
+              }),
+            ),
+          ),
+        )
+        .map((bus: Record<string, unknown>) => [
+          vehicleKey(bus) || `${bus.routeCode}-${bus.lat}-${bus.lng}`,
+          bus,
+        ]),
+    ).values(),
+  );
   const rememberedBuses = await rememberVehicles(routeBuses);
 
   const payload = {
     ok: true,
     checkedAt: new Date().toISOString(),
-    selectedStopId: String((uniqueStops[0] as Record<string, unknown> | undefined)?.stopId ?? ""),
+    selectedStopId: String(
+      (uniqueStops[0] as Record<string, unknown> | undefined)?.stopId ?? "",
+    ),
     stops: uniqueStops,
     routes: directory.routeList ?? [],
     stopInfo: null,
     buses: rememberedBuses,
     fleetStatus: {
-      live: rememberedBuses.filter((bus) => bus.trackingStatus === "live").length,
-      recentlySeen: rememberedBuses.filter((bus) => bus.trackingStatus === "recently_seen").length,
+      live: rememberedBuses.filter((bus) => bus.trackingStatus === "live")
+        .length,
+      recentlySeen: rememberedBuses.filter(
+        (bus) => bus.trackingStatus === "recently_seen",
+      ).length,
       retentionMode: "supabase_until_live_again",
     },
     arrivals: [],
@@ -257,9 +400,15 @@ async function buildAndSaveSnapshot(location: { lat: string; lng: string; lang?:
     referenceRoutePaths: roadAlignedRoutePaths,
     coverage: {
       requestedRouteDirections: routeResponses.length,
-      freshRouteDirections: routeResponses.filter((entry) => entry.source === "live").length,
-      retainedRouteDirections: routeResponses.filter((entry) => entry.source === "retained").length,
-      unavailableRouteDirections: routeResponses.filter((entry) => entry.source === "empty").length,
+      freshRouteDirections: routeResponses.filter(
+        (entry) => entry.source === "live",
+      ).length,
+      retainedRouteDirections: routeResponses.filter(
+        (entry) => entry.source === "retained",
+      ).length,
+      unavailableRouteDirections: routeResponses.filter(
+        (entry) => entry.source === "empty",
+      ).length,
     },
   };
   await saveSnapshot(payload as unknown as Record<string, unknown>);
@@ -278,14 +427,17 @@ export async function GET(request: NextRequest) {
   try {
     const requestedLat = Number(request.nextUrl.searchParams.get("lat"));
     const requestedLng = Number(request.nextUrl.searchParams.get("lng"));
-    const requestedLanguage = request.nextUrl.searchParams.get("lang") === "ur" ? "ur" : "en";
+    const requestedLanguage =
+      request.nextUrl.searchParams.get("lang") === "ur" ? "ur" : "en";
     const location = {
       lat: Number.isFinite(requestedLat) ? String(requestedLat) : "24.860966",
       lng: Number.isFinite(requestedLng) ? String(requestedLng) : "66.990501",
       lang: requestedLanguage,
     };
 
-    const wantsFullFleet = !request.nextUrl.searchParams.get("route") && !request.nextUrl.searchParams.get("stopId");
+    const wantsFullFleet =
+      !request.nextUrl.searchParams.get("route") &&
+      !request.nextUrl.searchParams.get("stopId");
     const forceRefresh = request.nextUrl.searchParams.get("refresh") === "1";
 
     // Fast path: the default full-fleet view is served from the shared Supabase
@@ -297,11 +449,19 @@ export async function GET(request: NextRequest) {
         // If stale, kick off ONE background refresh but still serve instantly.
         if (age > SNAPSHOT_TTL_MS && !snapshotRefreshInFlight) {
           snapshotRefreshInFlight = true;
-          void buildAndSaveSnapshot(location).finally(() => { snapshotRefreshInFlight = false; });
+          void buildAndSaveSnapshot(location).finally(() => {
+            snapshotRefreshInFlight = false;
+          });
         }
         return NextResponse.json(
-          { ...snapshot.payload, servedFrom: "snapshot", snapshotAgeSeconds: Math.round(age / 1000) },
-          { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } },
+          {
+            ...snapshot.payload,
+            servedFrom: "snapshot",
+            snapshotAgeSeconds: Math.round(age / 1000),
+          },
+          {
+            headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+          },
         );
       }
     }
@@ -316,39 +476,81 @@ export async function GET(request: NextRequest) {
         ]),
       ).values(),
     );
-    const stopId = request.nextUrl.searchParams.get("stopId") ?? String((uniqueStops[0] as Record<string, unknown> | undefined)?.stopId ?? "");
+    const stopId =
+      request.nextUrl.searchParams.get("stopId") ??
+      String(
+        (uniqueStops[0] as Record<string, unknown> | undefined)?.stopId ?? "",
+      );
     const displayRouteCode = request.nextUrl.searchParams.get("route") ?? "";
     const live = stopId
-      ? await passengerFetch("api/bus/closest", { busStopId: stopId }, location).catch(() => ({ busList: [], routeList: [], stopInfo: null, result: { code: -1 } }))
+      ? await passengerFetch(
+          "api/bus/closest",
+          { busStopId: stopId },
+          location,
+        ).catch(() => ({
+          busList: [],
+          routeList: [],
+          stopInfo: null,
+          result: { code: -1 },
+        }))
       : { busList: [], routeList: [], stopInfo: null };
     const routeCodes = displayRouteCode
       ? [displayRouteCode]
-      : (directory.routeList ?? []).map((route: Record<string, unknown>) => String(route.displayRouteCode ?? route.routeCode ?? "")).filter(Boolean);
+      : (directory.routeList ?? [])
+          .map((route: Record<string, unknown>) =>
+            String(route.displayRouteCode ?? route.routeCode ?? ""),
+          )
+          .filter(Boolean);
     let routeResponses: RouteResponseEntry[];
     if (!displayRouteCode && fleetCache) {
-      routeResponses = fleetCache.expiresAt > Date.now()
-        ? fleetCache.entries
-        : await refreshFleet(routeCodes, location);
+      routeResponses =
+        fleetCache.expiresAt > Date.now()
+          ? fleetCache.entries
+          : await refreshFleet(routeCodes, location);
     } else if (!displayRouteCode) {
       routeResponses = await refreshFleet(routeCodes, location);
     } else {
-      routeResponses = await routeInfoEntries(routeCodes, location, displayRouteCode ? [] : fleetCache?.entries ?? []);
+      routeResponses = await routeInfoEntries(
+        routeCodes,
+        location,
+        displayRouteCode ? [] : (fleetCache?.entries ?? []),
+      );
     }
-    const routePaths = routeResponses.flatMap(({ response }) => response.pathList ?? []);
-    const routeBuses = Array.from(new Map(routeResponses.flatMap(({ routeCode, response }) =>
-      (response.pathList ?? []).flatMap((path: Record<string, unknown>) =>
-        (Array.isArray(path.busList) ? path.busList : []).map((bus: Record<string, unknown>) => ({
-          ...bus,
-          routeCode,
-          displayRouteCode: routeCode,
-          plate: bus.plateNumber,
-        })),
-      ),
-    ).map((bus: Record<string, unknown>) => [vehicleKey(bus) || `${bus.routeCode}-${bus.lat}-${bus.lng}`, bus])).values());
-    const closestBuses = Array.isArray(live.busList) ? live.busList as Record<string, unknown>[] : [];
-    const currentBuses = Array.from(new Map(
-      [...routeBuses, ...closestBuses].map((bus) => [vehicleKey(bus) || `${bus.routeCode}-${bus.lat}-${bus.lng}`, bus]),
-    ).values());
+    const routePaths = routeResponses.flatMap(
+      ({ response }) => response.pathList ?? [],
+    );
+    const routeBuses = Array.from(
+      new Map(
+        routeResponses
+          .flatMap(({ routeCode, response }) =>
+            (response.pathList ?? []).flatMap((path: Record<string, unknown>) =>
+              (Array.isArray(path.busList) ? path.busList : []).map(
+                (bus: Record<string, unknown>) => ({
+                  ...bus,
+                  routeCode,
+                  displayRouteCode: routeCode,
+                  plate: bus.plateNumber,
+                }),
+              ),
+            ),
+          )
+          .map((bus: Record<string, unknown>) => [
+            vehicleKey(bus) || `${bus.routeCode}-${bus.lat}-${bus.lng}`,
+            bus,
+          ]),
+      ).values(),
+    );
+    const closestBuses = Array.isArray(live.busList)
+      ? (live.busList as Record<string, unknown>[])
+      : [];
+    const currentBuses = Array.from(
+      new Map(
+        [...routeBuses, ...closestBuses].map((bus) => [
+          vehicleKey(bus) || `${bus.routeCode}-${bus.lat}-${bus.lng}`,
+          bus,
+        ]),
+      ).values(),
+    );
     const rememberedBuses = await rememberVehicles(currentBuses);
 
     const responsePayload = {
@@ -360,31 +562,50 @@ export async function GET(request: NextRequest) {
       stopInfo: live.stopInfo ?? null,
       buses: rememberedBuses,
       fleetStatus: {
-        live: rememberedBuses.filter((bus) => bus.trackingStatus === "live").length,
-        recentlySeen: rememberedBuses.filter((bus) => bus.trackingStatus === "recently_seen").length,
-        retentionMode: supabaseFleetEnabled() ? "supabase_until_live_again" : "server_memory_until_live_again",
+        live: rememberedBuses.filter((bus) => bus.trackingStatus === "live")
+          .length,
+        recentlySeen: rememberedBuses.filter(
+          (bus) => bus.trackingStatus === "recently_seen",
+        ).length,
+        retentionMode: supabaseFleetEnabled()
+          ? "supabase_until_live_again"
+          : "server_memory_until_live_again",
       },
       arrivals: live.routeList ?? [],
       routePaths,
       referenceRoutePaths: roadAlignedRoutePaths,
       coverage: {
         requestedRouteDirections: routeResponses.length,
-        freshRouteDirections: routeResponses.filter((entry) => entry.source === "live").length,
-        retainedRouteDirections: routeResponses.filter((entry) => entry.source === "retained").length,
-        unavailableRouteDirections: routeResponses.filter((entry) => entry.source === "empty").length,
+        freshRouteDirections: routeResponses.filter(
+          (entry) => entry.source === "live",
+        ).length,
+        retainedRouteDirections: routeResponses.filter(
+          (entry) => entry.source === "retained",
+        ).length,
+        unavailableRouteDirections: routeResponses.filter(
+          (entry) => entry.source === "empty",
+        ).length,
       },
     };
 
     // Seed/refresh the shared snapshot from a full-fleet computation so the next
     // visitors are served instantly from Supabase instead of re-sweeping.
     if (wantsFullFleet && supabaseFleetEnabled()) {
-      void saveSnapshot(responsePayload as unknown as Record<string, unknown>).catch(() => {});
+      void saveSnapshot(
+        responsePayload as unknown as Record<string, unknown>,
+      ).catch(() => {});
     }
 
-    return NextResponse.json(responsePayload, { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } });
+    return NextResponse.json(responsePayload, {
+      headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+    });
   } catch (error) {
     return NextResponse.json(
-      { ok: false, message: "Live service is temporarily unavailable", detail: error instanceof Error ? error.message : "Unknown error" },
+      {
+        ok: false,
+        message: "Live service is temporarily unavailable",
+        detail: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 502 },
     );
   }
