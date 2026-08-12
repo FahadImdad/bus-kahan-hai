@@ -542,8 +542,22 @@ export function BusTracker() {
   // capture the beforeinstallprompt event so we can offer our own Install button.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if ("serviceWorker" in navigator)
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).then(
+        (registration) => registration.update(),
+      ).catch(() => {});
+      const onControllerChange = () => {
+        const reloadKey = "bkh-worker-v2-reloaded";
+        if (window.sessionStorage.getItem(reloadKey)) return;
+        window.sessionStorage.setItem(reloadKey, "1");
+        window.location.reload();
+      };
+      navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
+      window.setTimeout(
+        () => window.sessionStorage.removeItem("bkh-worker-v2-reloaded"),
+        15_000,
+      );
+    }
     const isStandalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       (window.navigator as unknown as { standalone?: boolean }).standalone ===
