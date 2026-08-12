@@ -1011,6 +1011,15 @@ export function BusTracker() {
     activeAnimations.clear();
     markers.current.forEach((marker) => marker.remove());
     markers.current = [];
+    const selectedRouteLiveCount = selectedRoute
+      ? data.buses.filter(
+          (bus) =>
+            bus.trackingStatus !== "recently_seen" &&
+            isKarachiBus(bus) &&
+            canonicalRouteCode(bus.displayRouteCode || bus.routeCode) ===
+              canonicalRouteCode(selectedRoute),
+        ).length
+      : 0;
     if (targetLocation) {
       const marker = L.marker([targetLocation.lat, targetLocation.lng], {
         icon: L.divIcon({
@@ -1030,6 +1039,20 @@ export function BusTracker() {
             : "Your current location",
       );
       markers.current.push(marker);
+      const pickupLabel = L.tooltip({
+        permanent: true,
+        direction: "top",
+        offset: [0, -20],
+        className: "pickup-map-label",
+      })
+        .setLatLng([targetLocation.lat, targetLocation.lng])
+        .setContent(
+          language === "ur"
+            ? `${selectedRouteLiveCount} لائیو بسیں · منتخب مقام`
+            : `${manualLocation ? "Pickup point" : "Your location"} · ${selectedRouteLiveCount} live ${selectedRouteLiveCount === 1 ? "bus" : "buses"}`,
+        )
+        .addTo(currentMap);
+      markers.current.push(pickupLabel);
     }
     const selected = data.stops.find(
       (stop) => String(stop.stopId) === data.selectedStopId,
@@ -1098,6 +1121,13 @@ export function BusTracker() {
         const label = bus.displayRouteCode || "BUS";
         const color = routeLineColor(label);
         const isRecentlySeen = bus.trackingStatus === "recently_seen";
+        const isPickupBus = Boolean(
+          targetLocation &&
+            selectedRoute &&
+            !isRecentlySeen &&
+            canonicalRouteCode(bus.displayRouteCode || bus.routeCode) ===
+              canonicalRouteCode(selectedRoute),
+        );
         const statusLabel = isRecentlySeen
           ? lastSeenLabel(bus, language)
           : language === "ur"
@@ -1112,10 +1142,64 @@ export function BusTracker() {
             ? "white"
             : "red";
         const key = clientVehicleKey(bus);
+        const samples = motionHistory.current.get(key) ?? [];
+        const previous = samples.length > 1 ? samples[samples.length - 2] : null;
+        const pickupDistance =
+          isPickupBus && targetLocation
+            ? routeDistanceKm(snapped, targetLocation, routePathsForBus)
+            : null;
+        const previousRouteDistance =
+          previous && targetLocation
+            ? routeDistanceKm(previous, targetLocation, routePathsForBus)
+            : null;
+        const movedSinceSample = previous
+          ? distanceKm(previous, { stopId: "current", ...snapped })
+          : 0;
+        const pickupDirection =
+          previousRouteDistance !== null &&
+          pickupDistance !== null &&
+          movedSinceSample >= 0.015
+            ? pickupDistance < previousRouteDistance - 0.01
+              ? "approaching"
+              : "away"
+            : "checking";
+        const elapsedHours = previous
+          ? Math.max(
+              ((samples.at(-1)?.at ?? Date.now()) - previous.at) / 3_600_000,
+              1 / 3600,
+            )
+          : 0;
+        const observedSpeed = elapsedHours ? movedSinceSample / elapsedHours : 18;
+        const pickupSpeed = Math.min(45, Math.max(10, observedSpeed));
+        const pickupMinutes =
+          pickupDistance !== null && pickupDirection !== "away"
+            ? Math.max(1, Math.round((pickupDistance / pickupSpeed) * 60))
+            : null;
+        const pickupDistanceLabel =
+          pickupDistance === null
+            ? ""
+            : pickupDistance < 1
+              ? `${Math.round(pickupDistance * 1000)}${language === "ur" ? " میٹر" : " m"}`
+              : `${pickupDistance.toFixed(1)}${language === "ur" ? " کلومیٹر" : " km"}`;
+        const pickupDirectionLabel =
+          language === "ur"
+            ? pickupDirection === "approaching"
+              ? "قریب آ رہی ہے"
+              : pickupDirection === "away"
+                ? "دور جا رہی ہے"
+                : "سمت چیک ہو رہی ہے"
+            : pickupDirection === "approaching"
+              ? "TOWARD YOUR POINT →"
+              : pickupDirection === "away"
+                ? "← AWAY FROM YOUR POINT"
+                : "WAITING FOR NEXT LOCATION";
+        const pickupMapInfo = isPickupBus
+          ? `<span class="pickup-bus-info ${pickupDirection}"><strong>${vehicleLabel}</strong><small>${pickupDirectionLabel}</small><em>${pickupDistanceLabel}${pickupMinutes !== null ? ` · ~${pickupMinutes} ${language === "ur" ? "منٹ" : "min"}` : ""}</em></span>`
+          : "";
         activeBusKeys.add(key);
         const icon = L.divIcon({
           className: "bus-marker-wrap",
-          html: `<button class="bus-map-icon ${busKind}${bearing > 0 && bearing < 180 ? " facing-right" : ""}${isRecentlySeen ? " recently-seen" : ""}" style="--route-color:${color}" aria-label="${statusLabel} bus ${label}"><img src="/bus-map-icon.png" alt=""><b>${label}</b></button>`,
+          html: `<button class="bus-map-icon ${busKind}${bearing > 0 && bearing < 180 ? " facing-right" : ""}${isRecentlySeen ? " recently-seen" : ""}${isPickupBus ? " has-pickup-info" : ""}" style="--route-color:${color}" aria-label="${statusLabel} bus ${label}${isPickupBus ? `, ${pickupDistanceLabel}, ${pickupDirectionLabel}` : ""}"><img src="/bus-map-icon.png" alt=""><b>${label}</b>${pickupMapInfo}</button>`,
           iconSize: [54, 48],
           iconAnchor: [27, 45],
           popupAnchor: [0, -45],
@@ -1133,7 +1217,6 @@ export function BusTracker() {
         marker.bindPopup(
           `<div dir="${language === "ur" ? "rtl" : "ltr"}"><strong>${label}</strong><br>${vehicleLabel}<br>${statusLabel}<br><small>${language === "ur" ? "مقام ابھی اپ ڈیٹ ہوا" : "Location updated just now"}</small></div>`,
         );
-        const samples = motionHistory.current.get(key) ?? [];
         busMarkerDetails.current.set(key, {
           label,
           vehicleLabel,
@@ -1453,12 +1536,8 @@ export function BusTracker() {
         const samples = motionHistory.current.get(clientVehicleKey(bus)) ?? [];
         const previous =
           samples.length > 1 ? samples[samples.length - 2] : null;
-        const currentDistance = distanceKm(current, {
-          stopId: "target",
-          ...targetLocation,
-        });
-        const previousDistance = previous
-          ? distanceKm(previous, { stopId: "target", ...targetLocation })
+        const previousRouteDistance = previous
+          ? routeDistanceKm(previous, targetLocation, paths)
           : null;
         const moved = previous
           ? distanceKm(previous, { stopId: "current", ...current })
@@ -1466,8 +1545,8 @@ export function BusTracker() {
         const movement =
           bus.trackingStatus === "recently_seen" || moved < 0.015
             ? "unknown"
-            : previousDistance !== null &&
-                currentDistance < previousDistance - 0.01
+            : previousRouteDistance !== null &&
+                distance < previousRouteDistance - 0.01
               ? "approaching"
               : "away";
         const elapsedHours = previous
@@ -2577,17 +2656,15 @@ export function BusTracker() {
               </div>
               <div className="pickup-bus-estimates">
                 {selectedRouteTargetBuses.length ? (
-                  selectedRouteTargetBuses
-                  .slice(0, 3)
-                  .map(({ bus, distance, movement, etaMinutes }) => (
+                  selectedRouteTargetBuses.map(({ bus, distance, movement, etaMinutes }) => (
                   <div key={clientVehicleKey(bus)}>
                     <b>{bus.plate || (language === "ur" ? "لائیو بس" : "Live bus")}</b>
-                    <small>
+                    <small className={`pickup-estimate-status ${movement}`}>
                       {distance === null || !Number.isFinite(distance)
                         ? language === "ur"
                           ? "فاصلہ دستیاب نہیں"
                           : "Distance unavailable"
-                        : `${distance < 1 ? `${Math.round(distance * 1000)} ${language === "ur" ? "میٹر" : "m"}` : `${distance.toFixed(1)} ${language === "ur" ? "کلومیٹر" : "km"}`} · ${movement === "away" ? (language === "ur" ? "دور جا رہی ہے" : "Moving away") : `${language === "ur" ? "اندازاً پہنچنے کا وقت" : "Estimated arrival time"}: ~${etaMinutes ?? Math.max(1, Math.round((distance / 18) * 60))} ${language === "ur" ? "منٹ" : "min"}`}`}
+                        : `${movement === "approaching" ? (language === "ur" ? "آپ کے مقام کی طرف →" : "TOWARD YOUR POINT →") : movement === "away" ? (language === "ur" ? "← آپ کے مقام سے دور" : "← AWAY FROM YOUR POINT") : (language === "ur" ? "اگلی لوکیشن کا انتظار" : "WAITING FOR NEXT LOCATION")} · ${distance < 1 ? `${Math.round(distance * 1000)} ${language === "ur" ? "میٹر" : "m"}` : `${distance.toFixed(1)} ${language === "ur" ? "کلومیٹر" : "km"}`}${movement === "approaching" && etaMinutes ? ` · ~${etaMinutes} ${language === "ur" ? "منٹ" : "min"}` : ""}`}
                     </small>
                   </div>
                   ))

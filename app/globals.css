@@ -94,6 +94,10 @@ h1 em { color: var(--red); font-style: normal; }
 .pickup-bus-estimates b, .pickup-bus-estimates small { display: block; }
 .pickup-bus-estimates b { overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .pickup-bus-estimates small { margin-top: 2px; color: #168052; font-size: 8px; line-height: 1.35; }
+.pickup-bus-estimates .pickup-estimate-status { font-weight: 850; }
+.pickup-bus-estimates .pickup-estimate-status.approaching { color: #08713f; }
+.pickup-bus-estimates .pickup-estimate-status.away { color: #b65300; }
+.pickup-bus-estimates .pickup-estimate-status.unknown { color: #526b7f; }
 .pickup-no-live { grid-column: 1 / -1; margin: 0; padding: 10px; border-radius: 10px; background: #eef2f5; color: #657b8e; font-size: 9px; line-height: 1.45; }
 .route-required { margin: 0 0 10px; padding: 10px 12px; border-radius: 12px; background: #fff6dc; border: 1px solid #ead59a; color: #6f591c; font-size: 10px; font-weight: 700; line-height: 1.45; }
 .location-button { width: 100%; min-height: 76px; margin: 0; padding: 12px 13px; border: 1px solid #bfd0df; border-radius: 15px; background: rgba(255,255,255,.94); color: var(--ink); display: flex; align-items: center; gap: 11px; text-align: left; cursor: pointer; box-shadow: 0 8px 24px rgba(3,31,61,.08); transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
@@ -199,6 +203,8 @@ select:disabled { opacity: .5; cursor: not-allowed; background: #eceee9; }
 .stop-marker { width: 18px; height: 18px; border-radius: 50%; background: white; border: 5px solid var(--green); box-shadow: 0 0 0 5px rgba(11,122,75,.18); }
 .user-marker { width: 19px; height: 19px; border-radius: 50%; background: var(--red); border: 4px solid white; box-shadow: 0 0 0 7px rgba(255,23,31,.18), 0 3px 12px rgba(3,31,61,.3); }
 .user-marker.manual { width: 22px; height: 22px; border-radius: 50% 50% 50% 0; background: #1d5f8f; transform: rotate(-45deg); box-shadow: 0 0 0 6px rgba(29,95,143,.18), 0 4px 14px rgba(20,60,100,.3); }
+.pickup-map-label { border: 0; border-radius: 9px; padding: 6px 9px; background: #073f72; color: white; font-size: 11px; font-weight: 800; box-shadow: 0 4px 14px rgba(3,31,61,.3); }
+.pickup-map-label::before { border-top-color: #073f72; }
 .route-end { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: white; border: 4px solid var(--green); color: var(--green); font-size: 9px; font-weight: 900; box-shadow: 0 4px 13px rgba(11,74,48,.25); }
 .bus-marker { min-width: 36px; height: 24px; border: 0; border-radius: 7px; padding: 0 6px; background: var(--green); color: white; font-size: 8px; font-weight: 900; box-shadow: 0 4px 10px rgba(11,74,48,.24); cursor: pointer; }
 .bus-marker:not(.recently-seen) { position: relative; }
@@ -219,6 +225,18 @@ select:disabled { opacity: .5; cursor: not-allowed; background: #eceee9; }
 .bus-map-icon.recently-seen > b { border-color: rgba(255,255,255,.75); background: color-mix(in srgb, var(--route-color) 62%, white); color: white; box-shadow: none; }
 .bus-map-icon.recently-seen > img { filter: none; }
 .bus-map-icon.live-glide::after { animation: liveGlidePulse 1.8s ease-out infinite; }
+.pickup-bus-info { position: absolute; z-index: 6; left: 48px; top: 2px; width: max-content; max-width: 175px; padding: 6px 8px; border: 1px solid #b8cee0; border-radius: 9px; background: rgba(255,255,255,.96); color: #062f57; text-align: left; box-shadow: 0 3px 10px rgba(3,31,61,.2); pointer-events: none; }
+.pickup-bus-info strong, .pickup-bus-info small, .pickup-bus-info em { display: block; white-space: nowrap; }
+.pickup-bus-info strong { overflow: hidden; font-size: 10px; line-height: 1.2; text-overflow: ellipsis; }
+.pickup-bus-info small { margin-top: 2px; font-size: 9px; font-weight: 900; line-height: 1.25; }
+.pickup-bus-info em { margin-top: 2px; color: #526b7f; font-size: 9px; font-style: normal; font-weight: 800; }
+.pickup-bus-info.approaching { border: 2px solid #168052; background: #effaf4; }
+.pickup-bus-info.approaching small { color: #08713f; }
+.pickup-bus-info.away { border: 2px solid #d66a00; background: #fff7ec; }
+.pickup-bus-info.away small { color: #b65300; }
+.pickup-bus-info.checking { border: 2px solid #8296a8; background: #f4f7f9; }
+.pickup-bus-info.checking small { color: #526b7f; }
+.bus-map-icon.facing-right .pickup-bus-info { left: auto; right: 48px; text-align: right; }
 @keyframes liveGlidePulse { 0%, 45% { box-shadow: 0 0 0 0 rgba(255,23,31,.42), 0 2px 5px rgba(3,31,61,.3); } 100% { box-shadow: 0 0 0 9px rgba(255,23,31,0), 0 2px 5px rgba(3,31,61,.3); } }
 .service-activity { margin: 0 0 14px; padding: 11px 13px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid #cbd9e6; border-radius: 13px; background: rgba(255,255,255,.72); }
 .service-activity span { color: var(--navy); font-size: 10px; font-weight: 900; }
