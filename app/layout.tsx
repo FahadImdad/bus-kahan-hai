@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Manrope } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
+
+const GA_MEASUREMENT_ID = "G-4CV2E4N8R8";
 
 export const viewport: Viewport = {
   themeColor: "#073665",
@@ -57,5 +60,5 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     description: "Find Karachi People’s Bus routes, stops and available live vehicle locations.",
     sameAs: socialProfiles,
   };
-  return <html lang="en"><body className={manrope.variable}><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />{children}</body></html>;
+  return <html lang="en"><body className={manrope.variable}><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} /><Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} strategy="afterInteractive" /><Script id="gtag-init" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: `window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', '${GA_MEASUREMENT_ID}');` }} />{children}</body></html>;
 }
