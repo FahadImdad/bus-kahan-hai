@@ -423,8 +423,85 @@ async function buildAndSaveSnapshot(location: {
 const SNAPSHOT_TTL_MS = 20_000;
 let snapshotRefreshInFlight = false;
 
+const PUBLIC_CACHE_HEADERS = {
+  // Browsers revalidate, while Vercel's shared CDN serves one response to every
+  // visitor for 10 seconds. This keeps the map fresh without one function and
+  // database read per user.
+  "Cache-Control": "public, max-age=0, must-revalidate",
+  "CDN-Cache-Control": "public, s-maxage=10, stale-while-revalidate=30",
+  "Vercel-CDN-Cache-Control": "public, s-maxage=10, stale-while-revalidate=30",
+};
+
+function publicPayload(
+  payload: Record<string, unknown>,
+  view: "full" | "fleet",
+) {
+  if (view === "full")
+    return {
+      ...payload,
+      routePaths: compactRoutePaths(payload.routePaths),
+      referenceRoutePaths: compactRoutePaths(payload.referenceRoutePaths),
+    };
+  return {
+    ok: payload.ok,
+    checkedAt: payload.checkedAt,
+    snapshotAgeSeconds: payload.snapshotAgeSeconds,
+    servedFrom: payload.servedFrom,
+    buses: payload.buses,
+    fleetStatus: payload.fleetStatus,
+    coverage: payload.coverage,
+  };
+}
+
+function compactRoutePaths(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.map((rawPath) => {
+    const path = rawPath as Record<string, unknown>;
+    const rawPoints = Array.isArray(path.pointList)
+      ? (path.pointList as Array<Record<string, unknown>>)
+      : [];
+    const points = rawPoints.flatMap((point) => {
+      const lat = Number(point.lat ?? point.latitude);
+      const lng = Number(point.lng ?? point.longitude);
+      return Number.isFinite(lat) && Number.isFinite(lng) ? [{ lat, lng }] : [];
+    });
+    // Roughly 50 metres between retained geometry points. This preserves the
+    // route shape and pin/along-route calculations while removing thousands of
+    // redundant coordinates from every visitor's initial download.
+    const simplified = points.reduce<typeof points>((kept, point, index) => {
+      const previous = kept.at(-1);
+      if (
+        !previous ||
+        index === points.length - 1 ||
+        Math.hypot(point.lat - previous.lat, point.lng - previous.lng) >= 0.00045
+      )
+        kept.push(point);
+      return kept;
+    }, []);
+    const rawStops = Array.isArray(path.busStopList)
+      ? (path.busStopList as Array<Record<string, unknown>>)
+      : [];
+    const busStopList = rawStops.map((stop) => ({
+      stopId: stop.stopId,
+      stopName: stop.stopName ?? stop.name,
+      lat: stop.lat ?? stop.latitude,
+      lng: stop.lng ?? stop.longitude,
+    }));
+    return {
+      routeCode: path.routeCode,
+      displayRouteCode: path.displayRouteCode ?? path.routeCode,
+      direction: path.direction,
+      headSign: path.headSign ?? path.name,
+      pointList: simplified,
+      busStopList,
+    };
+  });
+}
+
 export async function GET(request: NextRequest) {
   try {
+    const view =
+      request.nextUrl.searchParams.get("view") === "fleet" ? "fleet" : "full";
     const requestedLat = Number(request.nextUrl.searchParams.get("lat"));
     const requestedLng = Number(request.nextUrl.searchParams.get("lng"));
     const requestedLanguage =
@@ -441,7 +518,7 @@ export async function GET(request: NextRequest) {
     const forceRefresh = request.nextUrl.searchParams.get("refresh") === "1";
 
     // Fast path: the default full-fleet view is served from the shared Supabase
-    // snapshot. This is what scales to all of Karachi for free.
+    // snapshot. The CDN then shares that response across visitors.
     if (wantsFullFleet && supabaseFleetEnabled() && !forceRefresh) {
       const snapshot = await loadSnapshot().catch(() => null);
       if (snapshot) {
@@ -449,20 +526,25 @@ export async function GET(request: NextRequest) {
         // If stale, kick off ONE background refresh but still serve instantly.
         if (age > SNAPSHOT_TTL_MS && !snapshotRefreshInFlight) {
           snapshotRefreshInFlight = true;
-          void buildAndSaveSnapshot(location).finally(() => {
-            snapshotRefreshInFlight = false;
-          });
+          void buildAndSaveSnapshot(location)
+            .catch((error) => {
+              // Keep serving the last verified snapshot when the upstream
+              // service times out. A background refresh must never terminate
+              // the website process.
+              console.error("Background fleet refresh failed", error);
+            })
+            .finally(() => {
+              snapshotRefreshInFlight = false;
+            });
         }
-        return NextResponse.json(
-          {
+        const payload = {
             ...snapshot.payload,
             servedFrom: "snapshot",
             snapshotAgeSeconds: Math.round(age / 1000),
-          },
-          {
-            headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
-          },
-        );
+          };
+        return NextResponse.json(publicPayload(payload, view), {
+          headers: PUBLIC_CACHE_HEADERS,
+        });
       }
     }
 
@@ -596,9 +678,12 @@ export async function GET(request: NextRequest) {
       ).catch(() => {});
     }
 
-    return NextResponse.json(responsePayload, {
-      headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
-    });
+    return NextResponse.json(
+      publicPayload(responsePayload as unknown as Record<string, unknown>, view),
+      {
+      headers: PUBLIC_CACHE_HEADERS,
+      },
+    );
   } catch (error) {
     return NextResponse.json(
       {

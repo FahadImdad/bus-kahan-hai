@@ -596,7 +596,7 @@ export function BusTracker() {
       location?: Location | null,
       routeCode?: string,
       silent = false,
-      forceRefresh = false,
+      _forceRefresh = false,
       preserveOtherRoutes = false,
     ) => {
       if (silent && activeRequest.current) return;
@@ -606,18 +606,13 @@ export function BusTracker() {
       const sequence = ++requestSequence.current;
       if (!silent) setLoading(true);
       try {
-        const params = new URLSearchParams();
-        if (stopId) params.set("stopId", stopId);
-        params.set("lang", language);
-        if (location) {
-          params.set("lat", String(location.lat));
-          params.set("lng", String(location.lng));
-        }
-        if (routeCode) params.set("route", routeCode);
-        if (forceRefresh) params.set("refresh", "1");
+        // Every visitor uses one of two stable, CDN-cacheable URLs. The full
+        // response is needed only for initial/static route data; polling uses a
+        // much smaller fleet-only response.
+        const params = new URLSearchParams({ view: silent ? "fleet" : "full" });
         const response = await fetch(
-          `/api/transit${params.size ? `?${params}` : ""}`,
-          { cache: "no-store", signal: controller.signal },
+          `/api/transit?${params}`,
+          { cache: "default", signal: controller.signal },
         );
         if (!response.ok) throw new Error();
         const next: TransitData = await response.json();
@@ -660,7 +655,19 @@ export function BusTracker() {
                 busSnapshotSignature(mergedBuses)
             )
               return previous;
-            return { ...next, buses: mergedBuses };
+            return previous
+              ? {
+                  ...previous,
+                  ...next,
+                  stops: next.stops ?? previous.stops,
+                  routes: next.routes ?? previous.routes,
+                  arrivals: next.arrivals ?? previous.arrivals,
+                  routePaths: next.routePaths ?? previous.routePaths,
+                  referenceRoutePaths:
+                    next.referenceRoutePaths ?? previous.referenceRoutePaths,
+                  buses: mergedBuses,
+                }
+              : { ...next, buses: mergedBuses };
           });
           setSelectedStop(stopId || (routeCode ? "" : next.selectedStopId));
           setError("");
@@ -691,7 +698,7 @@ export function BusTracker() {
         if (!silent && sequence === requestSequence.current) setLoading(false);
       }
     },
-    [language],
+    [],
   );
 
   useEffect(() => {
@@ -737,20 +744,33 @@ export function BusTracker() {
     pinModeRef.current = pinMode;
   }, [pinMode]);
   useEffect(() => {
-    const timer = window.setInterval(
-      () =>
-        load(
+    const hasLiveBuses = (data?.buses ?? []).some(
+      (bus) => bus.trackingStatus !== "recently_seen",
+    );
+    const refreshVisibleMap = () => {
+      if (document.visibilityState !== "visible") return;
+      void load(
           selectedStop,
           targetLocation,
           selectedRoute,
           true,
           false,
           Boolean(selectedRoute),
-        ),
-      selectedRoute ? 10_000 : 15_000,
+        );
+    };
+    const timer = window.setInterval(
+      refreshVisibleMap,
+      hasLiveBuses ? (selectedRoute ? 10_000 : 15_000) : 60_000,
     );
-    return () => window.clearInterval(timer);
-  }, [load, selectedRoute, selectedStop, targetLocation]);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") refreshVisibleMap();
+    };
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [data?.buses, load, selectedRoute, selectedStop, targetLocation]);
   useEffect(() => {
     const timer = window.setInterval(() => setClock(Date.now()), 1_000);
     return () => window.clearInterval(timer);
@@ -1048,8 +1068,8 @@ export function BusTracker() {
         .setLatLng([targetLocation.lat, targetLocation.lng])
         .setContent(
           language === "ur"
-            ? `${selectedRouteLiveCount} لائیو بسیں · منتخب مقام`
-            : `${manualLocation ? "Pickup point" : "Your location"} · ${selectedRouteLiveCount} live ${selectedRouteLiveCount === 1 ? "bus" : "buses"}`,
+            ? `${selectedRouteLiveCount} لائیو بسیں`
+            : `${selectedRouteLiveCount} live ${selectedRouteLiveCount === 1 ? "bus" : "buses"}`,
         )
         .addTo(currentMap);
       markers.current.push(pickupLabel);
@@ -1172,7 +1192,7 @@ export function BusTracker() {
         const observedSpeed = elapsedHours ? movedSinceSample / elapsedHours : 18;
         const pickupSpeed = Math.min(45, Math.max(10, observedSpeed));
         const pickupMinutes =
-          pickupDistance !== null && pickupDirection !== "away"
+          pickupDistance !== null && pickupDirection === "approaching"
             ? Math.max(1, Math.round((pickupDistance / pickupSpeed) * 60))
             : null;
         const pickupDistanceLabel =
@@ -1189,12 +1209,12 @@ export function BusTracker() {
                 ? "دور جا رہی ہے"
                 : "سمت چیک ہو رہی ہے"
             : pickupDirection === "approaching"
-              ? "TOWARD YOUR POINT →"
+              ? "Approaching point →"
               : pickupDirection === "away"
-                ? "← AWAY FROM YOUR POINT"
-                : "WAITING FOR NEXT LOCATION";
+                ? "← Moving away"
+                : "Checking direction";
         const pickupMapInfo = isPickupBus
-          ? `<span class="pickup-bus-info ${pickupDirection}"><strong>${vehicleLabel}</strong><small>${pickupDirectionLabel}</small><em>${pickupDistanceLabel}${pickupMinutes !== null ? ` · ~${pickupMinutes} ${language === "ur" ? "منٹ" : "min"}` : ""}</em></span>`
+          ? `<span class="pickup-bus-info ${pickupDirection}"><strong>${vehicleLabel} · ${pickupDistanceLabel}</strong><small>${pickupDirectionLabel}${pickupMinutes !== null ? ` · ~${pickupMinutes} ${language === "ur" ? "منٹ" : "min"}` : ""}</small></span>`
           : "";
         activeBusKeys.add(key);
         const icon = L.divIcon({
@@ -2179,23 +2199,18 @@ export function BusTracker() {
               language === "ur" ? "کراچی بس کا نقشہ" : "Karachi bus map"
             }
           />
-          <div className={`map-status ${freshnessTone}`}>
+          <div
+            className={`map-status ${freshnessTone}`}
+            title={`${coverageText} · ${recentlySeenBusCount} last known locations`}
+          >
             <span className="pulse" />
-            <div>
-              <b>
-                {loading
-                  ? t.refreshing
-                  : language === "ur"
-                    ? `${visibleBusCount} تصدیق شدہ لائیو · ${recentlySeenBusCount} آخری معلوم مقام`
-                    : `${visibleBusCount} buses visible now · feed may not include every operating bus`}
-              </b>
-              <small>
-                {language === "ur"
-                  ? `ذریعہ ${ageLabel(freshnessSeconds, language)} اپ ڈیٹ ہوا · آخری جانچ ${Math.max(0, Math.floor((clock - lastApiCheck) / 1000))} سیکنڈ پہلے`
-                  : `Source updated ${ageLabel(freshnessSeconds, language)} · checked ${Math.max(0, Math.floor((clock - lastApiCheck) / 1000))}s ago`}{" "}
-                · {coverageText}
-              </small>
-            </div>
+            <b>
+              {loading
+                ? t.refreshing
+                : language === "ur"
+                  ? `${visibleBusCount} لائیو · ${ageLabel(freshnessSeconds, language)} پہلے`
+                  : `${visibleBusCount} live · updated ${ageLabel(freshnessSeconds, language)} ago`}
+            </b>
           </div>
           <details className="map-data-info">
             <summary>
